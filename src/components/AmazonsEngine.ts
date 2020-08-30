@@ -97,7 +97,6 @@ export class AmazonsEngine {
     }
 
     getSquareState(p: Point) {
-        console.log(`x: ${p.x} y: ${p.y}`)
         return this.board[p.y][p.x]
     }
 
