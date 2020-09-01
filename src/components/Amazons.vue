@@ -322,10 +322,10 @@ const Amazons = defineComponent({
           const oldPosition = this.turnState.previousPosition!;
           if (this.game.isPointQueenMoveAway(oldPosition, newPosition)) {
             this.turnState.prepareToShoot(newPosition);
-            this.highlightedSquares = this.game.getPossibleQueenMovesFromPoint(
-              newPosition
+            this.highlightedSquares = this.game.getPossibleQueenMovesFromPointIgnoreObstacleAt(
+              newPosition,
+              oldPosition
             );
-            this.highlightedSquares.push(oldPosition)
           } else {
             this.turnState.reset();
             this.highlightedSquares = [];
@@ -344,9 +344,10 @@ const Amazons = defineComponent({
           const previousPosition = this.turnState.previousPosition!;
           if (
             !(
-              this.game.isPointQueenMoveAway(
+              this.game.canShootAtPoint(
                 this.turnState.positionToShootFrom!,
-                arrowHitPosition
+                arrowHitPosition,
+                this.turnState.previousPosition!
               ) ||
               (previousPosition.x == arrowHitPosition.x &&
                 previousPosition!.y == arrowHitPosition.y)

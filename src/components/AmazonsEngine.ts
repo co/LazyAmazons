@@ -81,7 +81,7 @@ export class AmazonsEngine {
     }
 
     makeMove(start: Point, end: Point, arrow: Point) {
-        if(!(this.isPointQueenMoveAway(start, end) && this.isPointQueenMoveAway(end, arrow) ||
+        if(!(this.isPointQueenMoveAway(start, end) && this.canShootAtPoint(end, arrow, start) ||
         start.x == arrow.x && start!.y == arrow.y)){
             throw `Tried to make invalid move: start:${start} end:${end} arrow:${arrow}`
         }
@@ -117,6 +117,10 @@ export class AmazonsEngine {
 
     isPointQueenMoveAway(start: Point, end: Point) {
         return this.getPossibleQueenMovesFromPoint(start).some((pm) => pm.x == end.x && pm.y == end.y)
+    }
+
+    canShootAtPoint(start: Point, end: Point, originalAmazonPosition: Point) {
+        return this.getPossibleQueenMovesFromPointIgnoreObstacleAt(start, originalAmazonPosition).some((pm) => pm.x == end.x && pm.y == end.y)
     }
 
     setSquareAn(positionAN: string, state: SquareState) {
@@ -157,6 +161,20 @@ export class AmazonsEngine {
         });
         return possibleMoves;
     }
+
+    getPossibleQueenMovesFromPointIgnoreObstacleAt(p: Point, obstacleToIgnore: Point) {
+        const possibleMoves: Point[] = []
+        DIRECTIONS.forEach(d => {
+            const position = new Point(p.x + d.x, p.y + d.y)
+            while (this.IsSquareOnBoardAndEmpty(position.x, position.y) || (position.x == obstacleToIgnore.x && position.y == obstacleToIgnore.y)) {
+                possibleMoves.push(new Point(position.x, position.y))
+                position.x += d.x
+                position.y += d.y
+            }
+        });
+        return possibleMoves;
+    }
+
 
     print() {
         let output = ""
