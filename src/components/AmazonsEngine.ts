@@ -10,6 +10,16 @@ const UP_RIGHT = { x: 1, y: -1 }
 const DOWN_RIGHT = { x: 1, y: 1 }
 const DIRECTIONS = [UP, DOWN, LEFT, RIGHT, UP_LEFT, DOWN_LEFT, UP_RIGHT, DOWN_RIGHT]
 
+export class Point {
+    x = 0
+    y = 0
+
+    constructor(x: number, y: number) {
+        this.x = x
+        this.y = y
+    }
+}
+
 export enum Color {
     White,
     Black
@@ -29,36 +39,118 @@ export enum SquareState {
     Black4,
 }
 
-export function isWhiteAmazon(s: SquareState)
-{
+export function isWhiteAmazon(s: SquareState) {
     return [SquareState.White1, SquareState.White2, SquareState.White3, SquareState.White4].some(p => p == s)
 }
 
-export function isBlackAmazon(s: SquareState)
-{
+export function isBlackAmazon(s: SquareState) {
     return [SquareState.Black1, SquareState.Black2, SquareState.Black3, SquareState.Black4].some(p => p == s)
 }
 
+function ANFromSquarePosition(s: Point) {
+    const possibleFiles = "abcdefghij"
+    return possibleFiles[s.x] + (10-s.y);
+}
 
-export class Point {
-    x = 0
-    y = 0
-
-    constructor(x: number, y: number) {
-        this.x = x
-        this.y = y
+function squarePositonFromAN(n: string) {
+    const possibleFiles = "abcdefghij"
+    const file = n[0]
+    file.toLowerCase()
+    const rank = parseInt(n.slice(1))
+    if (!possibleFiles.includes(file) || rank < 1 || rank > 10) {
+        throw "Can't parse Algebraic Notation of: " + n
     }
+    const x = possibleFiles.indexOf(file)
+    const y = 10 - rank
+    return new Point(x, y)
+}
+
+export class Move {
+    start: string
+    end: string
+    arrow: string
+
+    previous: Move | undefined
+    next: Move | undefined
+
+    constructor(start: string, end: string, arrow: string) {
+
+        this.start = start
+        this.end = end
+        this.arrow = arrow
+    }
+}
+
+export class MoveHistory {
+    first: Move | undefined | null
+    current: Move | undefined | null
+
+
+    constructor() {
+        this.first = null
+        this.current = null
+    }
+
+    reset(){
+        this.first = null
+        this.current = null
+    }
+
+    makeMove(start: Point, end: Point, arrow: Point) {
+        this.makeMoveAN(ANFromSquarePosition(start), ANFromSquarePosition(end), ANFromSquarePosition(arrow))
+    }
+
+    makeMoveAN(start: string, end: string, arrow: string) {
+        const newMove = new  Move(start, end, arrow);
+        if(!this.first){
+            this.first = newMove
+        }
+        if(this.current) {
+            this.current.next = newMove
+            newMove.previous = this.current
+        }
+        this.current = newMove
+    }
+
+    goBack() {
+        const moveBacked = this.current
+        this.current = this.current?.previous
+        return moveBacked
+    }
+
+    goNext() {
+        if(!this.current)
+        {
+            this.current = this.first
+            return this.first
+        }
+        if(this.current?.next)
+        {
+            this.current = this.current?.next
+            return this.current
+        }
+        return null
+    }
+
 }
 
 export class AmazonsEngine {
     board: SquareState[][]
     turnNumber: number
+    history: MoveHistory
 
-    get turn(): Color{
+    get turn(): Color {
         return this.turnNumber % 2 == 0 ? Color.White : Color.Black
     }
 
     constructor() {
+        this.turnNumber = 0
+        this.board = []
+        this.history = new MoveHistory()
+        this.resetBoard()
+    }
+
+    resetBoard() {
         this.board = []
         for (let i = 0; i < 10; i++) {
             this.board[i] = [];
@@ -78,11 +170,24 @@ export class AmazonsEngine {
         this.setSquareAn("d1", SquareState.White2)
         this.setSquareAn("g1", SquareState.White3)
         this.setSquareAn("j4", SquareState.White4)
+
+        this.history.reset()
+    }
+
+    playGameFromString(gameLog: string) {
+        this.resetBoard()
+        const squaresInAN = gameLog.match(/[abcdefghij](10|\d)/gm)!
+        while (squaresInAN.length >= 3) {
+            const from = squarePositonFromAN(squaresInAN.shift()!)
+            const to = squarePositonFromAN(squaresInAN.shift()!)
+            const arrow = squarePositonFromAN(squaresInAN.shift()!)
+            this.makeMove(from, to, arrow)
+        }
     }
 
     makeMove(start: Point, end: Point, arrow: Point) {
-        if(!(this.isPointQueenMoveAway(start, end) && this.canShootAtPoint(end, arrow, start) ||
-        start.x == arrow.x && start!.y == arrow.y)){
+        if (!(this.isPointQueenMoveAway(start, end) && this.canShootAtPoint(end, arrow, start) ||
+            start.x == arrow.x && start!.y == arrow.y)) {
             throw `Tried to make invalid move: start:${start} end:${end} arrow:${arrow}`
         }
         const amazon = this.board[start.y][start.x]
@@ -93,7 +198,34 @@ export class AmazonsEngine {
         this.board[start.y][start.x] = SquareState.Empty;
         this.board[end.y][end.x] = amazon;
         this.board[arrow.y][arrow.x] = SquareState.Arrow;
+        this.history.makeMove(start, end, arrow)
         this.turnNumber++
+    }
+
+    backMove()
+    {
+        const bm = this.history.goBack()
+        console.log(bm)
+        if(bm)
+        {
+            this.setSquareAn(bm.arrow, SquareState.Empty)
+            this.setSquareAn(bm.start, this.getSquareState(squarePositonFromAN(bm.end)))
+            this.setSquareAn(bm.end, SquareState.Empty)
+        }
+    }
+
+
+
+    nextMove()
+    {
+        const nm = this.history.goNext()
+        console.log(nm)
+        if(nm)
+        {
+            this.setSquareAn(nm.end, this.getSquareState(squarePositonFromAN(nm.start)))
+            this.setSquareAn(nm.start, SquareState.Empty)
+            this.setSquareAn(nm.arrow, SquareState.Arrow)
+        }
     }
 
     getSquareState(p: Point) {
@@ -110,7 +242,7 @@ export class AmazonsEngine {
             this.board[start.y][start.x] = SquareState.Empty
             this.board[end.y][end.x] = startPiece
         }
-        else{
+        else {
             throw "Tried to move amazon, but the move was not legal. start: " + start
         }
     }
@@ -124,21 +256,8 @@ export class AmazonsEngine {
     }
 
     setSquareAn(positionAN: string, state: SquareState) {
-        const point = this.squarePositonFromAN(positionAN)
+        const point = squarePositonFromAN(positionAN)
         this.board[point.y][point.x] = state
-    }
-
-    squarePositonFromAN(n: string) {
-        const possibleFiles = "abcdefghij"
-        const file = n[0]
-        file.toLowerCase()
-        const rank = parseInt(n.slice(1))
-        if (!possibleFiles.includes(file) || rank < 1 || rank > 10) {
-            throw "Can't parse Algebraic Notation of: " + n
-        }
-        const x = possibleFiles.indexOf(file)
-        const y = 10 - rank
-        return new Point(x, y)
     }
 
     IsSquareOnBoardAndEmpty(x: number, y: number) {

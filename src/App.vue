@@ -13,7 +13,6 @@ import Amazons from "./components/Amazons.vue";
     Amazons,
   },
 })
-
 export default class App extends Vue {
   get size() {
     return 20;
@@ -29,5 +28,13 @@ export default class App extends Vue {
   text-align: center;
   color: #2c3e50;
 }
-*{background: #2e2f35;}
+.button {
+  background-color: black;
+  color: white;
+  border: 2px solid white;
+}
+* {
+  background: #2e2f35;
+  color: white;
+}
 </style>

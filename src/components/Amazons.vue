@@ -5,6 +5,9 @@
     width="400"
     height="400"
   ></canvas>
+  <button @click="onPrev">prev</button>
+  <button @click="loadGameFromClipboard">load</button>
+  <button @click="onNext">next</button>
 </template>
 <script lang="ts">
 import { defineComponent } from "vue";
@@ -68,7 +71,7 @@ const Amazons = defineComponent({
       boardSize: 10,
       boardWidth: -1,
       squareSize: -1,
-      boardOffset: new Point(0,0),
+      boardOffset: new Point(0, 0),
       canvas: (null as unknown) as HTMLCanvasElement,
       blackAmazons: [
         { x: 0, y: 3 },
@@ -122,13 +125,30 @@ const Amazons = defineComponent({
         window.innerWidth,
         window.innerHeight
       );
-      this.squareSize = Math.max(Math.floor((shortestWindowSide -40) / this.boardSize), 4);
+      this.squareSize = Math.max(
+        Math.floor((shortestWindowSide - 40) / this.boardSize),
+        4
+      );
       this.boardWidth = this.squareSize * this.boardSize;
       this.canvas.width = this.boardWidth;
       this.canvas.height = this.boardWidth;
       this.squareSize = Math.floor(this.boardWidth / this.boardSize);
       const BB = this.canvas.getBoundingClientRect();
       this.boardOffset = new Point(BB.left, BB.top);
+    },
+    onPrev() {
+      this.game.backMove()
+      this.draw()
+    },
+    onNext() {
+      this.game.nextMove()
+      this.draw()
+    },
+    loadGameFromClipboard() {
+      navigator.clipboard.readText().then((text) => {
+        this.game.playGameFromString(text);
+        this.draw();
+      });
     },
     draw() {
       const ctx = this.canvas.getContext("2d")!;
@@ -279,7 +299,6 @@ const Amazons = defineComponent({
         case TurnPhase.Start: {
           e.preventDefault();
           e.stopPropagation();
-
 
           const mx = Math.round(e.clientX - this.boardOffset.x);
           const my = Math.round(e.clientY - this.boardOffset.y);
