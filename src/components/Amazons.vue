@@ -87,7 +87,7 @@ const Amazons = defineComponent({
       ],
       blackAmazonImage: (null as unknown) as HTMLImageElement,
       whiteAmazonImage: (null as unknown) as HTMLImageElement,
-      highlightedSquares: [] as Point[],
+      legalPositions: [] as Point[],
       turnState: new TurnState(),
       game: new AmazonsEngine(),
     };
@@ -137,7 +137,7 @@ const Amazons = defineComponent({
       this.boardOffset = new Point(BB.left, BB.top);
     },
     resetTurnState() {
-      this.highlightedSquares = [];
+      this.legalPositions = [];
       this.turnState.reset();
     },
     onPrev() {
@@ -160,40 +160,17 @@ const Amazons = defineComponent({
     draw() {
       const ctx = this.canvas.getContext("2d")!;
 
-      let x: number;
-      let y: number;
-      let isWhite = true;
-      for (y = 0; y < this.boardSize; y++) {
-        for (x = 0; x < this.boardSize; x++) {
-          isWhite ? (ctx.fillStyle = "#EFEDD1") : (ctx.fillStyle = "#789656");
-          ctx.fillRect(
-            x * this.squareSize,
-            y * this.squareSize,
-            this.squareSize,
-            this.squareSize
-          );
-          const squareState = this.game.getSquareState(new Point(x, y));
-          this.drawSquareState(ctx, x, y, squareState);
-          isWhite = !isWhite;
-        }
-        isWhite = !isWhite;
-      }
+      this.drawEmptyBoard(ctx);
+      this.drawPreviousMoveHighlight(ctx);
+      this.drawAllSquareStates(ctx);
 
-      if (this.turnState.phase == TurnPhase.WaitingToShoot) {
-        const movingAmazon = this.game.getSquareState(
-          this.turnState.previousPosition!
-        );
-        const shootingPosition = this.turnState.positionToShootFrom!;
-        this.drawSquareState(
-          ctx,
-          shootingPosition.x,
-          shootingPosition.y,
-          movingAmazon
-        );
-      }
+      this.drawShootingAmazon(ctx);
+      this.drawLegalPositions(ctx);
+    },
 
+    drawLegalPositions(ctx: CanvasRenderingContext2D) {
       ctx.globalAlpha = 0.3;
-      this.highlightedSquares.forEach((s) => {
+      this.legalPositions.forEach((s) => {
         ctx.beginPath();
         ctx.arc(
           s.x * this.squareSize + this.squareSize / 2,
@@ -207,6 +184,80 @@ const Amazons = defineComponent({
         ctx.fill();
       });
       ctx.globalAlpha = 1;
+    },
+    drawShootingAmazon(ctx: CanvasRenderingContext2D) {
+      if (this.turnState.phase == TurnPhase.WaitingToShoot) {
+        const movingAmazon = this.game.getSquareState(
+          this.turnState.previousPosition!
+        );
+        const shootingPosition = this.turnState.positionToShootFrom!;
+        this.drawSquareState(
+          ctx,
+          shootingPosition.x,
+          shootingPosition.y,
+          movingAmazon
+        );
+      }
+    },
+    drawEmptyBoard(ctx: CanvasRenderingContext2D) {
+      let x: number;
+      let y: number;
+      let isWhite = true;
+      for (y = 0; y < this.boardSize; y++) {
+        for (x = 0; x < this.boardSize; x++) {
+          isWhite ? (ctx.fillStyle = "#F0D9B5") : (ctx.fillStyle = "#B58863");
+          //isWhite ? (ctx.fillStyle = "#EFEDD1") : (ctx.fillStyle = "#789656");
+          ctx.fillRect(
+            x * this.squareSize,
+            y * this.squareSize,
+            this.squareSize,
+            this.squareSize
+          );
+          const squareState = this.game.getSquareState(new Point(x, y));
+          isWhite = !isWhite;
+        }
+        isWhite = !isWhite;
+      }
+    },
+
+    drawPreviousMoveHighlight(ctx: CanvasRenderingContext2D) {
+      const lastMove = this.game.history.current;
+      if (!lastMove) {
+        return;
+      }
+
+      ctx.globalAlpha = 0.3;
+      const highlights = [
+        Point.fromAN(lastMove.start!),
+        Point.fromAN(lastMove.end!),
+        Point.fromAN(lastMove.arrow!),
+      ];
+
+      highlights.forEach((hl) => {
+        ctx.fillStyle = "#77ee33";
+        ctx.fillRect(
+          hl.x * this.squareSize,
+          hl.y * this.squareSize,
+          this.squareSize,
+          this.squareSize
+        );
+      });
+      ctx.globalAlpha = 1;
+    },
+
+    drawAllSquareStates(ctx: CanvasRenderingContext2D) {
+      let x: number;
+      let y: number;
+      for (y = 0; y < this.boardSize; y++) {
+        for (x = 0; x < this.boardSize; x++) {
+          this.drawSquareState(
+            ctx,
+            x,
+            y,
+            this.game.getSquareState(new Point(x, y))
+          );
+        }
+      }
     },
 
     drawSquareState(
@@ -240,8 +291,16 @@ const Amazons = defineComponent({
           2 * Math.PI,
           false
         );
-        ctx.fillStyle = "#aa1133";
+        ctx.fillStyle = "#888888";
         ctx.fill();
+        /*ctx.fillStyle = "#2e2f35";
+        ctx.fillRect(
+          x * this.squareSize,
+          y * this.squareSize,
+          this.squareSize,
+          this.squareSize
+        );
+        */
       }
     },
 
@@ -324,7 +383,7 @@ const Amazons = defineComponent({
           }
 
           this.turnState.startMovingAmazon(boardPosition);
-          this.highlightedSquares = this.game.getPossibleQueenMovesFromPoint(
+          this.legalPositions = this.game.getPossibleQueenMovesFromPoint(
             boardPosition
           );
           this.draw();
@@ -348,7 +407,7 @@ const Amazons = defineComponent({
           const oldPosition = this.turnState.previousPosition!;
           if (this.game.isPointQueenMoveAway(oldPosition, newPosition)) {
             this.turnState.prepareToShoot(newPosition);
-            this.highlightedSquares = this.game.getPossibleQueenMovesFromPointIgnoreObstacleAt(
+            this.legalPositions = this.game.getPossibleQueenMovesFromPointIgnoreObstacleAt(
               newPosition,
               oldPosition
             );
