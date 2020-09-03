@@ -86,11 +86,13 @@ export class Move {
 export class MoveHistory {
     first: Move | undefined | null
     current: Move | undefined | null
+    turnNumber: number
 
 
     constructor() {
         this.first = null
         this.current = null
+        this.turnNumber = 0
     }
 
     reset() {
@@ -99,11 +101,7 @@ export class MoveHistory {
     }
 
     makeMove(start: Point, end: Point, arrow: Point) {
-        this.makeMoveAN(start.ToAN(), end.ToAN(), arrow.ToAN());
-    }
-
-    makeMoveAN(start: string, end: string, arrow: string) {
-        const newMove = new Move(start, end, arrow);
+        const newMove = new Move(start.ToAN(), end.ToAN(), arrow.ToAN());
         if (!this.first) {
             this.first = newMove
         }
@@ -136,21 +134,40 @@ export class MoveHistory {
 
 export class AmazonsEngine {
     board: SquareState[][]
-    turnNumber: number
     history: MoveHistory
+    crossStartPosition = [
+        [SquareState.White1, "d1"],
+        [SquareState.White2, "d10"],
+        [SquareState.White3, "g1"],
+        [SquareState.White4, "g10"],
+
+        [SquareState.Black1, "a4"],
+        [SquareState.Black2, "a7"],
+        [SquareState.Black3, "j4"],
+        [SquareState.Black4, "j7"]]
+
+    amazonsStartPosition = [
+        [SquareState.Black1, "a7"],
+        [SquareState.Black2, "d10"],
+        [SquareState.Black3, "g10"],
+        [SquareState.Black4, "j7"],
+
+        [SquareState.White1, "a4"],
+        [SquareState.White2, "d1"],
+        [SquareState.White3, "g1"],
+        [SquareState.White4, "j4"]]
 
     get turn(): Color {
-        return this.turnNumber % 2 == 0 ? Color.White : Color.Black
+        return this.history.turnNumber % 2 == 0 ? Color.White : Color.Black
     }
 
     constructor() {
-        this.turnNumber = 0
         this.board = []
         this.history = new MoveHistory()
-        this.resetBoard()
+        this.resetBoard(this.amazonsStartPosition)
     }
 
-    resetBoard() {
+    private setEmptyBoard() {
         this.board = []
         for (let i = 0; i < 10; i++) {
             this.board[i] = [];
@@ -158,31 +175,41 @@ export class AmazonsEngine {
                 this.board[i][j] = SquareState.Empty
             }
         }
+    }
 
-        this.turnNumber = 0
 
-        this.setSquareAn("a7", SquareState.Black1)
-        this.setSquareAn("d10", SquareState.Black2)
-        this.setSquareAn("g10", SquareState.Black3)
-        this.setSquareAn("j7", SquareState.Black4)
-
-        this.setSquareAn("a4", SquareState.White1)
-        this.setSquareAn("d1", SquareState.White2)
-        this.setSquareAn("g1", SquareState.White3)
-        this.setSquareAn("j4", SquareState.White4)
-
-        this.history.reset()
+    resetBoard(piecesStartLocations: any[]) {
+        this.setEmptyBoard();
+        piecesStartLocations.forEach(pl => {
+            this.setSquareAn(pl[1], pl[0]);
+        });
+        this.history.reset();
     }
 
     playGameFromString(gameLog: string) {
-        this.resetBoard()
-        const squaresInAN = gameLog.match(/[abcdefghij](10|\d)/gm)!
+        const squaresInAN = gameLog.match(/[abcdefghij](10|\d)/gm)!;
+        const moves = [];
         while (squaresInAN.length >= 3) {
-            const from = Point.fromAN(squaresInAN.shift()!)
-            const to = Point.fromAN(squaresInAN.shift()!)
-            const arrow = Point.fromAN(squaresInAN.shift()!)
-            this.makeMove(from, to, arrow)
+            moves.push({from: squaresInAN.shift()!, to: squaresInAN.shift()!, arrow: squaresInAN.shift()!})
         }
+
+        let i = 0;
+        let isCrossSetup = false;
+        while(i < moves.length)
+        {
+            if(moves[i].from == "a4" || moves[i].from == "j4") {
+                isCrossSetup = i % 2 == 1; //will be black on cross setup
+                break;
+            } else if(moves[i].from == "d10" || moves[i].from == "g10") {
+                isCrossSetup = i % 2 == 0; //will be white on cross setup
+
+                break;
+            }
+            i++
+        }
+
+        this.resetBoard(isCrossSetup ? this.crossStartPosition : this.amazonsStartPosition);
+        moves.forEach((m) => this.makeMove(Point.fromAN(m.from), Point.fromAN(m.to), Point.fromAN(m.arrow)));
     }
 
     makeMove(start: Point, end: Point, arrow: Point) {
@@ -199,7 +226,6 @@ export class AmazonsEngine {
         this.board[end.y][end.x] = amazon;
         this.board[arrow.y][arrow.x] = SquareState.Arrow;
         this.history.makeMove(start, end, arrow)
-        this.turnNumber++
     }
 
     backMove() {
