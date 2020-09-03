@@ -136,15 +136,22 @@ const Amazons = defineComponent({
       const BB = this.canvas.getBoundingClientRect();
       this.boardOffset = new Point(BB.left, BB.top);
     },
+    resetTurnState() {
+      this.highlightedSquares = [];
+      this.turnState.reset();
+    },
     onPrev() {
-      this.game.backMove()
-      this.draw()
+      this.resetTurnState();
+      this.game.backMove();
+      this.draw();
     },
     onNext() {
-      this.game.nextMove()
-      this.draw()
+      this.resetTurnState();
+      this.game.nextMove();
+      this.draw();
     },
     loadGameFromClipboard() {
+      this.resetTurnState();
       navigator.clipboard.readText().then((text) => {
         this.game.playGameFromString(text);
         this.draw();
@@ -346,8 +353,7 @@ const Amazons = defineComponent({
               oldPosition
             );
           } else {
-            this.turnState.reset();
-            this.highlightedSquares = [];
+            this.resetTurnState();
           }
           this.draw();
           break;
@@ -372,8 +378,7 @@ const Amazons = defineComponent({
                 previousPosition!.y == arrowHitPosition.y)
             )
           ) {
-            this.turnState.reset();
-            this.highlightedSquares = [];
+            this.resetTurnState();
             this.draw();
             return;
           }
@@ -383,8 +388,7 @@ const Amazons = defineComponent({
             this.turnState.positionToShootFrom!,
             arrowHitPosition
           );
-          this.turnState.reset();
-          this.highlightedSquares = [];
+          this.resetTurnState();
           this.draw();
           break;
         }

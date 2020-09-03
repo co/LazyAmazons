@@ -86,13 +86,25 @@ export class Move {
 export class MoveHistory {
     first: Move | undefined | null
     current: Move | undefined | null
-    turnNumber: number
-
+    
+    get turnNumber(): number{
+        if(!this.current)
+        {
+            return 1
+        }
+        let current = this.first
+        let i = 2
+        while(current != this.current)
+        {
+            i++
+            current = current?.next
+        }
+        return i
+    }
 
     constructor() {
         this.first = null
         this.current = null
-        this.turnNumber = 0
     }
 
     reset() {
@@ -102,7 +114,7 @@ export class MoveHistory {
 
     makeMove(start: Point, end: Point, arrow: Point) {
         const newMove = new Move(start.ToAN(), end.ToAN(), arrow.ToAN());
-        if (!this.first) {
+        if (!this.current) {
             this.first = newMove
         }
         if (this.current) {
@@ -158,7 +170,7 @@ export class AmazonsEngine {
         [SquareState.White4, "j4"]]
 
     get turn(): Color {
-        return this.history.turnNumber % 2 == 0 ? Color.White : Color.Black
+        return this.history.turnNumber % 2 == 1 ? Color.White : Color.Black
     }
 
     constructor() {
