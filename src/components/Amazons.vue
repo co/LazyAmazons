@@ -5,9 +5,9 @@
     width="400"
     height="400"
   ></canvas>
-  <button @click="onPrev">prev</button>
+  <button @click="stepToPreviousMove">prev</button>
   <button @click="loadGameFromClipboard">load</button>
-  <button @click="onNext">next</button>
+  <button @click="stepToNextMove">next</button>
 </template>
 <script lang="ts">
 import { defineComponent } from "vue";
@@ -116,9 +116,10 @@ const Amazons = defineComponent({
     this.canvas.onmousedown = this.onMouseDown;
     this.canvas.onmouseup = this.onMouseUp;
     this.canvas.onmousemove = this.onMouseMove;
-    this.canvas.addEventListener("touchstart", this.touchStart);
-    this.canvas.addEventListener("touchmove", this.touchMove);
-    this.canvas.addEventListener("touchend", this.touchEnd);
+    this.canvas.addEventListener("touchstart", this.onTouchStart);
+    this.canvas.addEventListener("touchmove", this.onTouchMove);
+    this.canvas.addEventListener("touchend", this.onTouchEnd);
+    document.addEventListener('keydown', this.onKeyDown);
 
     this.draw();
   },
@@ -143,16 +144,18 @@ const Amazons = defineComponent({
       this.legalPositions = [];
       this.turnState.reset();
     },
-    onPrev() {
+    stepToPreviousMove() {
       this.resetTurnState();
       this.game.backMove();
       this.draw();
     },
-    onNext() {
+
+    stepToNextMove() {
       this.resetTurnState();
       this.game.nextMove();
       this.draw();
     },
+
     loadGameFromClipboard() {
       this.resetTurnState();
       navigator.clipboard.readText().then((text) => {
@@ -386,7 +389,7 @@ const Amazons = defineComponent({
       }
     },
 
-    touchMove(e: TouchEvent) {
+    onTouchMove(e: TouchEvent) {
       switch (this.turnState.phase) {
         case TurnPhase.AmazonMoving: {
           e.preventDefault();
@@ -411,7 +414,7 @@ const Amazons = defineComponent({
       return this.coordinateToSquare(mx, my);
     },
 
-    touchStart(e: TouchEvent) {
+    onTouchStart(e: TouchEvent) {
       switch (this.turnState.phase) {
         case TurnPhase.Start: {
           e.preventDefault();
@@ -456,7 +459,17 @@ const Amazons = defineComponent({
         }
       }
     },
-    touchEnd(e: TouchEvent) {
+    onKeyDown(e: KeyboardEvent) {
+      const key = e.which || e.keyCode; // keyCode detection
+      const ctrl = e.ctrlKey ? e.ctrlKey : ((key === 17) ? true : false); // ctrl detection
+
+      if ( key == 86 && ctrl ) {
+          this.loadGameFromClipboard()
+      }
+      else if (e.code === "ArrowRight") this.stepToNextMove();
+      else if (e.code === "ArrowLeft") this.stepToPreviousMove();
+    },
+    onTouchEnd(e: TouchEvent) {
       switch (this.turnState.phase) {
         case TurnPhase.AmazonMoving: {
           e.preventDefault();
