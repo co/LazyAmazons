@@ -354,7 +354,7 @@ const Amazons = defineComponent({
         ctx.arc(
           s.x * this.squareSize + this.squareSize / 2,
           s.y * this.squareSize + this.squareSize / 2,
-          this.squareSize,
+          this.squareSize * 1.2,
           0,
           2 * Math.PI,
           false
@@ -367,7 +367,7 @@ const Amazons = defineComponent({
       ctx.drawImage(
         isMovingPieceWhite ? this.whiteAmazonImage : this.blackAmazonImage,
         x - pieceSize / 2,
-        isTouch ? y - pieceSize : y - pieceSize / 2,
+        isTouch ? y - pieceSize * 1.2 : y - pieceSize / 2,
         pieceSize,
         pieceSize
       );
@@ -393,7 +393,7 @@ const Amazons = defineComponent({
           e.stopPropagation();
           const mx = Math.round(e.touches[0].clientX - this.boardOffset.x);
           const my = Math.round(e.touches[0].clientY - this.boardOffset.y);
-          this.drawFloatingAmazon(mx, my, this.squareSize * 1.5, true);
+          this.drawFloatingAmazon(mx, my, this.squareSize * 1.7, true);
           break;
         }
       }
