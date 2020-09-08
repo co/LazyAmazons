@@ -1,3 +1,8 @@
+import { Point } from './Point'
+import { Color } from './Color'
+import { SquareState } from './SquareState'
+import { MoveHistory } from './MoveHistory'
+
 const UP = { x: 0, y: -1 }
 const DOWN = { x: 0, y: 1 }
 const LEFT = { x: -1, y: 0 }
@@ -10,138 +15,12 @@ const UP_RIGHT = { x: 1, y: -1 }
 const DOWN_RIGHT = { x: 1, y: 1 }
 const DIRECTIONS = [UP, DOWN, LEFT, RIGHT, UP_LEFT, DOWN_LEFT, UP_RIGHT, DOWN_RIGHT]
 
-export class Point {
-    x = 0
-    y = 0
-
-    constructor(x: number, y: number) {
-        this.x = x
-        this.y = y
-    }
-
-    ToAN(): string {
-        const possibleFiles = "abcdefghij"
-        return possibleFiles[this.x] + (10 - this.y);
-    }
-
-    static fromAN(n: string) {
-        const possibleFiles = "abcdefghij"
-        const file = n[0]
-        file.toLowerCase()
-        const rank = parseInt(n.slice(1))
-        if (!possibleFiles.includes(file) || rank < 1 || rank > 10) {
-            throw "Can't parse Algebraic Notation of: " + n
-        }
-        const x = possibleFiles.indexOf(file)
-        const y = 10 - rank
-        return new Point(x, y)
-    }
-}
-
-export enum Color {
-    White,
-    Black
-}
-export enum SquareState {
-    Empty,
-    Arrow,
-
-    White1,
-    White2,
-    White3,
-    White4,
-
-    Black1,
-    Black2,
-    Black3,
-    Black4,
-}
-
 export function isWhiteAmazon(s: SquareState) {
     return [SquareState.White1, SquareState.White2, SquareState.White3, SquareState.White4].some(p => p == s)
 }
 
 export function isBlackAmazon(s: SquareState) {
     return [SquareState.Black1, SquareState.Black2, SquareState.Black3, SquareState.Black4].some(p => p == s)
-}
-
-
-
-export class Move {
-    start: string
-    end: string
-    arrow: string
-
-    previous: Move | undefined
-    next: Move | undefined
-
-    constructor(start: string, end: string, arrow: string) {
-
-        this.start = start
-        this.end = end
-        this.arrow = arrow
-    }
-}
-
-export class MoveHistory {
-    first: Move | undefined | null
-    current: Move | undefined | null
-    
-    get turnNumber(): number{
-        if(!this.current)
-        {
-            return 1
-        }
-        let current = this.first
-        let i = 2
-        while(current != this.current)
-        {
-            i++
-            current = current?.next
-        }
-        return i
-    }
-
-    constructor() {
-        this.first = null
-        this.current = null
-    }
-
-    reset() {
-        this.first = null
-        this.current = null
-    }
-
-    makeMove(start: Point, end: Point, arrow: Point) {
-        const newMove = new Move(start.ToAN(), end.ToAN(), arrow.ToAN());
-        if (!this.current) {
-            this.first = newMove
-        }
-        if (this.current) {
-            this.current.next = newMove
-            newMove.previous = this.current
-        }
-        this.current = newMove
-    }
-
-    goBack() {
-        const moveBacked = this.current
-        this.current = this.current?.previous
-        return moveBacked
-    }
-
-    goNext() {
-        if (!this.current) {
-            this.current = this.first
-            return this.first
-        }
-        if (this.current?.next) {
-            this.current = this.current?.next
-            return this.current
-        }
-        return null
-    }
-
 }
 
 export class AmazonsEngine {

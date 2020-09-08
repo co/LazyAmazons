@@ -8,16 +8,18 @@
   <button @click="stepToPreviousMove">prev</button>
   <button @click="loadGameFromClipboard">load</button>
   <button @click="stepToNextMove">next</button>
+  <HistoryList/>
 </template>
 <script lang="ts">
 import { defineComponent } from "vue";
+import { Point } from "./Point";
+import { Color } from "./Color";
+import { SquareState } from "./SquareState";
+import  HistoryList  from "./HistoryList.vue";
 import {
   AmazonsEngine,
-  Point,
-  Color,
   isWhiteAmazon,
   isBlackAmazon,
-  SquareState,
 } from "./AmazonsEngine";
 
 enum TurnPhase {
@@ -550,5 +552,6 @@ const Amazons = defineComponent({
   },
   computed: {},
 });
+
 export default Amazons;
 </script>
