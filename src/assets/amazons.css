@@ -1,0 +1,160 @@
+#app {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+}
+
+.button {
+    background-color: black;
+    color: white;
+    border: 2px solid white;
+    font-size: 20px;
+}
+
+.ghost-button {
+    color: white;
+    background: #2e2f35;
+    border: 1px solid white;
+    font-size: 17px;
+    padding: 7px 12px;
+    font-weight: normal;
+    margin: 6px 0;
+    margin-right: 12px;
+    display: inline-block;
+    text-decoration: none;
+    font-family: 'Open Sans', sans-serif;
+    min-width: 100px;
+}
+
+.ghost-button:hover,
+.ghost-button:active {
+    color: #fff;
+    background: #4b1622;
+}
+
+* {
+    background: #2e2f35;
+    color: white;
+}
+
+.toggleWithDescription {
+    margin: 0 auto;
+    width: 250px;
+    height: 30px;
+}
+
+.toggleDescription {
+    color: white;
+    font-size: 20px;
+    float: left;
+    height: 30px;
+    line-height: 30px;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.canvas {
+    border: 1px solid black;
+    image-rendering: crisp-edges;
+    float: left
+}
+
+.territoryCounterLeft {
+    padding-right: 10px;
+    width: 90px;
+    height: 50px;
+    text-align: right;
+    vertical-align: middle;
+    line-height: 50px;
+    color: black;
+    float: left;
+    font-size: 16px;
+}
+
+.territoryCounterRight {
+    background: white;
+    padding-right: 10px;
+    width: 20px;
+    height: 50px;
+    text-align: right;
+    vertical-align: middle;
+    line-height: 50px;
+    color: black;
+    float: left;
+    font-size: 16px;
+}
+
+.whiteOnBlack {
+    background-color: black;
+    color: white;
+}
+
+.blackOnWhite {
+    background-color: white;
+    color: black;
+}
+
+.whiteOnGrey {
+    background-color: grey;
+    color: white;
+}
+
+
+/* https://proto.io/freebies/onoff/ */
+
+.onoffswitch {
+    float: right;
+    position: relative;
+    width: 53px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.onoffswitch-checkbox {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.onoffswitch-label {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    height: 30px;
+    padding: 0;
+    line-height: 30px;
+    border: 2px solid #E3E3E3;
+    border-radius: 30px;
+    background-color: #808080;
+    transition: background-color 0.1s ease-in;
+}
+
+.onoffswitch-label:before {
+    content: "";
+    display: block;
+    width: 30px;
+    margin: 0px;
+    background: #FFFFFF;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 21px;
+    border: 2px solid #E3E3E3;
+    border-radius: 30px;
+    transition: all 0.1s ease-in 0s;
+}
+
+.onoffswitch-checkbox:checked+.onoffswitch-label {
+    background-color: #8EC28E;
+}
+
+.onoffswitch-checkbox:checked+.onoffswitch-label,
+.onoffswitch-checkbox:checked+.onoffswitch-label:before {
+    border-color: #8EC28E;
+}
+
+.onoffswitch-checkbox:checked+.onoffswitch-label:before {
+    right: 0px;
+}
