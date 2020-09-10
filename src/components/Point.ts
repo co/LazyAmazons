@@ -8,11 +8,19 @@ export class Point {
         this.y = y;
     }
 
-    ToAN(): string {
+    toAN(): string {
         const possibleFiles = "abcdefghij";
         return possibleFiles[this.x] + (10 - this.y);
     }
 
+    toString(): string {
+        return `${this.x},${this.y}`
+    }
+
+    static fromString(s: string): Point {
+        const substrings = s.split(",")
+        return new Point(parseInt(substrings[0]), parseInt(substrings[1]))
+    }
 
     static fromAN(n: string) {
         const possibleFiles = "abcdefghij";

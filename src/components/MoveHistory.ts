@@ -41,7 +41,7 @@ export class MoveHistory {
     }
 
     makeMove(start: Point, end: Point, arrow: Point) {
-        const newMove = new Move(start.ToAN(), end.ToAN(), arrow.ToAN());
+        const newMove = new Move(start.toAN(), end.toAN(), arrow.toAN());
         if (!this.current) {
             this.first = newMove;
         }

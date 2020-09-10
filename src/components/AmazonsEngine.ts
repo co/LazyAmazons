@@ -15,12 +15,108 @@ const UP_RIGHT = { x: 1, y: -1 }
 const DOWN_RIGHT = { x: 1, y: 1 }
 const DIRECTIONS = [UP, DOWN, LEFT, RIGHT, UP_LEFT, DOWN_LEFT, UP_RIGHT, DOWN_RIGHT]
 
+export function isAmazon(s: SquareState) {
+    return s != SquareState.Empty && s != SquareState.Arrow
+}
+
 export function isWhiteAmazon(s: SquareState) {
     return [SquareState.White1, SquareState.White2, SquareState.White3, SquareState.White4].some(p => p == s)
 }
 
 export function isBlackAmazon(s: SquareState) {
     return [SquareState.Black1, SquareState.Black2, SquareState.Black3, SquareState.Black4].some(p => p == s)
+}
+
+export class Territories {
+    _white = new Set<string>()
+    _black = new Set<string>()
+    _contested = new Set<string>()
+    _dead = new Set<string>()
+
+    get white(): Point[] {return Array.from(this._white).map(ps => Point.fromString(ps))}
+    get black(): Point[] {return Array.from(this._black).map(ps => Point.fromString(ps))}
+    get contested(): Point[] {return Array.from(this._contested).map(ps => Point.fromString(ps))}
+
+    static calculateFromBoard(board: SquareState[][]): Territories {
+        const result = new Territories()
+        const sideSize = board.length
+        const unknown = new Set<string>()
+        for (let y = 0; y < sideSize; y++) {
+            for (let x = 0; x < sideSize; x++) {
+                unknown.add(new Point(x, y).toString())
+            }
+        }
+        let iterator = unknown.keys();
+        while (unknown.size > 8) { //Only amazons will be in unknown by the end.
+            let next = Point.fromString(iterator.next().value);
+            while (isAmazon(board[next.y][next.x])) {
+                const nextValue = iterator.next().value
+                if(nextValue)
+                {
+                    next = Point.fromString(nextValue);
+                }
+                else{
+                    console.log("How did we get here?")
+                    return result
+                }
+            }
+
+            const tSet = this.findTerritory(next, board, new Set(), unknown, result._dead)
+            const territoryWithAmazons = Array.from(tSet).map(s => Point.fromString(s))
+            const hasWhiteAmazon = territoryWithAmazons.some(p => isWhiteAmazon(board[p.y][p.x]))
+            const hasBlackAmazon = territoryWithAmazons.some(p => isBlackAmazon(board[p.y][p.x]))
+            const territory = territoryWithAmazons.filter(p => !isAmazon(board[p.y][p.x]))
+            if (hasBlackAmazon && hasWhiteAmazon) {
+                territory.forEach(p => { result._contested.add(p.toString()); unknown.delete(p.toString()) });
+            } else if (hasWhiteAmazon) {
+                territory.forEach(p => { result._white.add(p.toString()); unknown.delete(p.toString()) });
+            } else if (hasBlackAmazon) {
+                territory.forEach(p => { result._black.add(p.toString()); unknown.delete(p.toString()) });
+            } else {
+                territory.forEach(p => { result._dead.add(p.toString()); unknown.delete(p.toString()) });
+            }
+            iterator = unknown.keys();
+        }
+
+        return result
+    }
+
+    private static findTerritory(point: Point, board: SquareState[][], territory: Set<string>, unknown: Set<string>, dead: Set<string>): Set<string> {
+        const pointStr = point.toString()
+        if (!unknown.has(pointStr)) {
+            return new Set();
+        }
+        if (board[point.y][point.x] == SquareState.Arrow) {
+            dead.add(pointStr)
+            unknown.delete(pointStr)
+            return new Set();
+        } else if (board[point.y][point.x] != SquareState.Empty) {
+            return new Set();
+        }
+        unknown.delete(pointStr)
+        territory.add(pointStr)
+        const visitQueue: Point[] = [];
+        DIRECTIONS.forEach(d => {
+            const neighbor = new Point(point.x + d.x, point.y + d.y);
+            const neighborStr = neighbor.toString();
+            if (unknown.has(neighborStr)) {
+                switch (board[neighbor.y][neighbor.x]) {
+                    case SquareState.Arrow:
+                        unknown.delete(neighborStr)
+                        dead.add(neighborStr)
+                        break;
+                    case SquareState.Empty:
+                        visitQueue.push(neighbor)
+                        break;
+                    default:// Add amazon to territory.
+                        territory.add(neighborStr)
+                        break;
+                }
+            }
+        });
+        visitQueue.forEach(p => { this.findTerritory(p, board, territory, unknown, dead) });
+        return territory
+    }
 }
 
 export class AmazonsEngine {
@@ -81,17 +177,16 @@ export class AmazonsEngine {
         const squaresInAN = gameLog.match(/[abcdefghij](10|\d)/gm)!;
         const moves = [];
         while (squaresInAN.length >= 3) {
-            moves.push({from: squaresInAN.shift()!, to: squaresInAN.shift()!, arrow: squaresInAN.shift()!})
+            moves.push({ from: squaresInAN.shift()!, to: squaresInAN.shift()!, arrow: squaresInAN.shift()! })
         }
 
         let i = 0;
         let isCrossSetup = false;
-        while(i < moves.length)
-        {
-            if(moves[i].from == "a4" || moves[i].from == "j4") {
+        while (i < moves.length) {
+            if (moves[i].from == "a4" || moves[i].from == "j4") {
                 isCrossSetup = i % 2 == 1; //will be black on cross setup
                 break;
-            } else if(moves[i].from == "d10" || moves[i].from == "g10") {
+            } else if (moves[i].from == "d10" || moves[i].from == "g10") {
                 isCrossSetup = i % 2 == 0; //will be white on cross setup
 
                 break;
@@ -117,6 +212,9 @@ export class AmazonsEngine {
         this.board[end.y][end.x] = amazon;
         this.board[arrow.y][arrow.x] = SquareState.Arrow;
         this.history.makeMove(start, end, arrow)
+
+        const t = Territories.calculateFromBoard(this.board)
+        console.log(t._contested)
     }
 
     backMove() {

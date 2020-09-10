@@ -1,25 +1,52 @@
 <template>
   <canvas
     id="bard"
-    style="border:1px solid black; image-erendering: crisp-edges"
+    style="border:1px solid black; image-erendering: crisp-edges; float:left"
     width="400"
     height="400"
   ></canvas>
   <button @click="stepToPreviousMove">prev</button>
   <button @click="loadGameFromClipboard">load</button>
   <button @click="stepToNextMove">next</button>
-  <HistoryList/>
+  <p />
+  <div style=" float: left; width=110px">
+    <div style=" width=110px">
+      <div
+        style="background: white;  padding-right: 10px; width: 90px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
+      >White</div>
+      <div
+        style="background: white;  padding-right: 10px; width: 20px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
+      >{{whiteTerritoryNumber}}</div>
+    </div>
+    <div style=" width=110px">
+      <div
+        style="background: grey;  padding-right: 10px; width: 90px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
+      >Contested</div>
+      <div
+        style="background: grey;  padding-right: 10px; width: 20px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
+      >{{contestedTerritoryNumber}}</div>
+    </div>
+    <div style=" width=110px">
+      <div
+        style="background: black;  padding-right: 10px; width: 90px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: white; float: left;"
+      >Black</div>
+      <div
+        style="background: black;  padding-right: 10px; width: 20px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: white; float: left;"
+      >{{blackTerritoryNumber}}</div>
+    </div>
+  </div>
 </template>
 <script lang="ts">
 import { defineComponent } from "vue";
 import { Point } from "./Point";
 import { Color } from "./Color";
 import { SquareState } from "./SquareState";
-import  HistoryList  from "./HistoryList.vue";
+import HistoryList from "./HistoryList.vue";
 import {
   AmazonsEngine,
   isWhiteAmazon,
   isBlackAmazon,
+  Territories,
 } from "./AmazonsEngine";
 
 enum TurnPhase {
@@ -73,7 +100,6 @@ const Amazons = defineComponent({
       boardSize: 10,
       boardWidth: -1,
       squareSize: -1,
-      boardOffset: new Point(0, 0),
       canvas: (null as unknown) as HTMLCanvasElement,
       blackAmazons: [
         { x: 0, y: 3 },
@@ -92,6 +118,9 @@ const Amazons = defineComponent({
       legalPositions: [] as Point[],
       turnState: new TurnState(),
       game: new AmazonsEngine(),
+      blackTerritory: [] as Point[],
+      whiteTerritory: [] as Point[],
+      contestedTerritory: [] as Point[],
     };
   },
 
@@ -121,11 +150,17 @@ const Amazons = defineComponent({
     this.canvas.addEventListener("touchstart", this.onTouchStart);
     this.canvas.addEventListener("touchmove", this.onTouchMove);
     this.canvas.addEventListener("touchend", this.onTouchEnd);
-    document.addEventListener('keydown', this.onKeyDown);
-
+    document.addEventListener("keydown", this.onKeyDown);
+    this.calculateTerritory();
     this.draw();
   },
   methods: {
+    calculateTerritory() {
+      const territory = Territories.calculateFromBoard(this.game.board);
+      this.blackTerritory = territory.black;
+      this.whiteTerritory = territory.white;
+      this.contestedTerritory = territory.contested;
+    },
     updateBoardParameters() {
       const shortestWindowSide = Math.min(
         window.innerWidth,
@@ -139,8 +174,6 @@ const Amazons = defineComponent({
       this.canvas.width = this.boardWidth;
       this.canvas.height = this.boardWidth;
       this.squareSize = Math.floor(this.boardWidth / this.boardSize);
-      const BB = this.canvas.getBoundingClientRect();
-      this.boardOffset = new Point(BB.left, BB.top);
     },
     resetTurnState() {
       this.legalPositions = [];
@@ -149,12 +182,14 @@ const Amazons = defineComponent({
     stepToPreviousMove() {
       this.resetTurnState();
       this.game.backMove();
+      this.calculateTerritory(); //todo: the move should trigger this!
       this.draw();
     },
 
     stepToNextMove() {
       this.resetTurnState();
       this.game.nextMove();
+      this.calculateTerritory(); //todo: the move should trigger this!
       this.draw();
     },
 
@@ -164,6 +199,7 @@ const Amazons = defineComponent({
         this.game.playGameFromString(text);
         this.draw();
       });
+      this.calculateTerritory(); //todo: the move should trigger this!
     },
     draw() {
       const ctx = this.canvas.getContext("2d")!;
@@ -353,7 +389,7 @@ const Amazons = defineComponent({
         this.game.getSquareState(this.turnState.previousPosition!)
       );
       if (isTouch) {
-        const s = this.coordinateToSquare(x, y)
+        const s = this.coordinateToSquare(x, y);
         ctx.globalAlpha = 0.2;
         ctx.beginPath();
         ctx.arc(
@@ -378,14 +414,29 @@ const Amazons = defineComponent({
       );
     },
 
+    getMousePosition(e: MouseEvent) {
+      const BB = this.canvas.getBoundingClientRect();
+      const boardOffset = new Point(BB.left, BB.top);
+      const mx = Math.round(e.clientX - boardOffset.x);
+      const my = Math.round(e.clientY - boardOffset.y);
+      return { x: mx, y: my };
+    },
+
+    getTouchPosition(tl: TouchList) {
+      const BB = this.canvas.getBoundingClientRect();
+      const boardOffset = new Point(BB.left, BB.top);
+      const tx = Math.round(tl[0].clientX - boardOffset.x);
+      const ty = Math.round(tl[0].clientY - boardOffset.y);
+      return { x: tx, y: ty };
+    },
+
     onMouseMove(e: MouseEvent) {
       switch (this.turnState.phase) {
         case TurnPhase.AmazonMoving: {
           e.preventDefault();
           e.stopPropagation();
-          const mx = Math.round(e.clientX - this.boardOffset.x);
-          const my = Math.round(e.clientY - this.boardOffset.y);
-          this.drawFloatingAmazon(mx, my, this.squareSize, false);
+          const mp = this.getMousePosition(e);
+          this.drawFloatingAmazon(mp.x, mp.y, this.squareSize, false);
           break;
         }
       }
@@ -396,24 +447,21 @@ const Amazons = defineComponent({
         case TurnPhase.AmazonMoving: {
           e.preventDefault();
           e.stopPropagation();
-          const mx = Math.round(e.touches[0].clientX - this.boardOffset.x);
-          const my = Math.round(e.touches[0].clientY - this.boardOffset.y);
-          this.drawFloatingAmazon(mx, my, this.squareSize * 1.7, true);
+          const tp = this.getTouchedPoint(e.touches);
+          this.drawFloatingAmazon(tp.x, tp.y, this.squareSize * 1.7, true);
           break;
         }
       }
     },
 
     getTouchedPoint(tl: TouchList) {
-      const mx = Math.round(tl[0].clientX - this.boardOffset.x);
-      const my = Math.round(tl[0].clientY - this.boardOffset.y);
-      return this.coordinateToSquare(mx, my);
+      const tp = this.getTouchPosition(tl);
+      return this.coordinateToSquare(tp.x, tp.y);
     },
 
     getPointAtMouse(e: MouseEvent) {
-      const mx = Math.round(e.clientX - this.boardOffset.x);
-      const my = Math.round(e.clientY - this.boardOffset.y);
-      return this.coordinateToSquare(mx, my);
+      const mp = this.getMousePosition(e);
+      return this.coordinateToSquare(mp.x, mp.y);
     },
 
     onTouchStart(e: TouchEvent) {
@@ -453,9 +501,8 @@ const Amazons = defineComponent({
           e.preventDefault();
           e.stopPropagation();
 
-          const mx = Math.round(e.clientX - this.boardOffset.x);
-          const my = Math.round(e.clientY - this.boardOffset.y);
-          this.tryStartMoveAmazon(this.coordinateToSquare(mx, my));
+          const mp = this.getMousePosition(e);
+          this.tryStartMoveAmazon(this.coordinateToSquare(mp.x, mp.y));
           this.draw();
           break;
         }
@@ -463,12 +510,11 @@ const Amazons = defineComponent({
     },
     onKeyDown(e: KeyboardEvent) {
       const key = e.which || e.keyCode; // keyCode detection
-      const ctrl = e.ctrlKey ? e.ctrlKey : ((key === 17) ? true : false); // ctrl detection
+      const ctrl = e.ctrlKey ? e.ctrlKey : key === 17 ? true : false; // ctrl detection
 
-      if ( key == 86 && ctrl ) {
-          this.loadGameFromClipboard()
-      }
-      else if (e.code === "ArrowRight") this.stepToNextMove();
+      if (key == 86 && ctrl) {
+        this.loadGameFromClipboard();
+      } else if (e.code === "ArrowRight") this.stepToNextMove();
       else if (e.code === "ArrowLeft") this.stepToPreviousMove();
     },
     onTouchEnd(e: TouchEvent) {
@@ -511,6 +557,7 @@ const Amazons = defineComponent({
           this.turnState.positionToShootFrom!,
           arrowHitPosition
         );
+        this.calculateTerritory(); //todo: the move should trigger this!
       }
       this.resetTurnState();
     },
@@ -550,7 +597,17 @@ const Amazons = defineComponent({
       }
     },
   },
-  computed: {},
+  computed: {
+    blackTerritoryNumber(): number {
+      return this.blackTerritory.length;
+    },
+    whiteTerritoryNumber(): number {
+      return this.whiteTerritory.length;
+    },
+    contestedTerritoryNumber(): number {
+      return this.contestedTerritory.length;
+    },
+  },
 });
 
 export default Amazons;
