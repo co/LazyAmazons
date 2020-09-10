@@ -36,6 +36,7 @@ export class Territories {
     get white(): Point[] {return Array.from(this._white).map(ps => Point.fromString(ps))}
     get black(): Point[] {return Array.from(this._black).map(ps => Point.fromString(ps))}
     get contested(): Point[] {return Array.from(this._contested).map(ps => Point.fromString(ps))}
+    get dead(): Point[] {return Array.from(this._dead).map(ps => Point.fromString(ps))}
 
     static calculateFromBoard(board: SquareState[][]): Territories {
         const result = new Territories()

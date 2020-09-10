@@ -1,38 +1,39 @@
 <template>
-  <canvas
-    id="bard"
-    style="border:1px solid black; image-erendering: crisp-edges; float:left"
-    width="400"
-    height="400"
-  ></canvas>
-  <button @click="stepToPreviousMove">prev</button>
-  <button @click="loadGameFromClipboard">load</button>
-  <button @click="stepToNextMove">next</button>
-  <p />
-  <div style=" float: left; width=110px">
-    <div style=" width=110px">
-      <div
-        style="background: white;  padding-right: 10px; width: 90px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
-      >White</div>
-      <div
-        style="background: white;  padding-right: 10px; width: 20px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
-      >{{whiteTerritoryNumber}}</div>
+  <canvas id="board" width="400" height="400"></canvas>
+  <div id="controlsColumn" style="text-align: center; background:">
+    <button class="ghost-button" @click="stepToPreviousMove">prev</button>
+    <button class="ghost-button" @click="loadGameFromClipboard">load</button>
+    <button class="ghost-button" @click="stepToNextMove">next</button>
+    <p/>
+    <div style="width=110px; display: inline-block;">
+      <div style=" width=110px">
+        <div class="territoryCounterLeft blackOnWhite">White</div>
+        <div class="territoryCounterRight blackOnWhite">{{whiteTerritoryNumber}}</div>
+      </div>
+      <div style="width=110px; display: table;">
+        <div class="territoryCounterLeft whiteOnGrey">Contested</div>
+        <div class="territoryCounterRight whiteOnGrey">{{contestedTerritoryNumber}}</div>
+      </div>
+      <div style="width=110px; display: table;">
+        <div class="territoryCounterLeft whiteOnBlack">Black</div>
+        <div class="territoryCounterRight whiteOnBlack">{{blackTerritoryNumber}}</div>
+      </div>
     </div>
-    <div style=" width=110px">
-      <div
-        style="background: grey;  padding-right: 10px; width: 90px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
-      >Contested</div>
-      <div
-        style="background: grey;  padding-right: 10px; width: 20px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: black; float: left;"
-      >{{contestedTerritoryNumber}}</div>
-    </div>
-    <div style=" width=110px">
-      <div
-        style="background: black;  padding-right: 10px; width: 90px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: white; float: left;"
-      >Black</div>
-      <div
-        style="background: black;  padding-right: 10px; width: 20px; height: 50px; text-align: right; vertical-align: middle; line-height: 50px; color: white; float: left;"
-      >{{blackTerritoryNumber}}</div>
+    <p/>
+    <div class="toggleWithDescription">
+      <div class="toggleDescription">Territory visualization</div>
+      <div class="onoffswitch">
+        <input
+          type="checkbox"
+          name="onoffswitch"
+          class="onoffswitch-checkbox"
+          id="myonoffswitch"
+          tabindex="0"
+          v-model="isTerritoryVisualizationEnabled"
+          @change="isTerritoryVisualizationEnabledChanged($event)"
+        />
+        <label class="onoffswitch-label" for="myonoffswitch"></label>
+      </div>
     </div>
   </div>
 </template>
@@ -118,9 +119,8 @@ const Amazons = defineComponent({
       legalPositions: [] as Point[],
       turnState: new TurnState(),
       game: new AmazonsEngine(),
-      blackTerritory: [] as Point[],
-      whiteTerritory: [] as Point[],
-      contestedTerritory: [] as Point[],
+      currentTerritory: new Territories(),
+      isTerritoryVisualizationEnabled: false,
     };
   },
 
@@ -156,10 +156,7 @@ const Amazons = defineComponent({
   },
   methods: {
     calculateTerritory() {
-      const territory = Territories.calculateFromBoard(this.game.board);
-      this.blackTerritory = territory.black;
-      this.whiteTerritory = territory.white;
-      this.contestedTerritory = territory.contested;
+      this.currentTerritory = Territories.calculateFromBoard(this.game.board);
     },
     updateBoardParameters() {
       const shortestWindowSide = Math.min(
@@ -197,19 +194,54 @@ const Amazons = defineComponent({
       this.resetTurnState();
       navigator.clipboard.readText().then((text) => {
         this.game.playGameFromString(text);
+        this.calculateTerritory(); //todo: the move should trigger this!
         this.draw();
       });
-      this.calculateTerritory(); //todo: the move should trigger this!
     },
     draw() {
       const ctx = this.canvas.getContext("2d")!;
 
       this.drawEmptyBoard(ctx);
       this.drawPreviousMoveHighlight(ctx);
+      if (this.isTerritoryVisualizationEnabled) {
+        this.drawTerritory(ctx);
+      }
       this.drawAllSquareStates(ctx);
 
       this.drawShootingAmazon(ctx);
       this.drawLegalPositions(ctx);
+    },
+
+    drawTerritory(ctx: CanvasRenderingContext2D) {
+      ctx.fillStyle = "#ccddff";
+      ctx.globalAlpha = 0.65;
+      this.currentTerritory.white.forEach((p) => {
+        ctx.fillRect(
+          p.x * this.squareSize,
+          p.y * this.squareSize,
+          this.squareSize,
+          this.squareSize
+        );
+      });
+      ctx.fillStyle = "#001122";
+      this.currentTerritory.black.forEach((p) => {
+        ctx.fillRect(
+          p.x * this.squareSize,
+          p.y * this.squareSize,
+          this.squareSize,
+          this.squareSize
+        );
+      });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#2e2f35";
+      this.currentTerritory.dead.forEach((p) => {
+        ctx.fillRect(
+          p.x * this.squareSize,
+          p.y * this.squareSize,
+          this.squareSize,
+          this.squareSize
+        );
+      });
     },
 
     drawLegalPositions(ctx: CanvasRenderingContext2D) {
@@ -271,6 +303,7 @@ const Amazons = defineComponent({
       }
 
       ctx.globalAlpha = 0.3;
+      ctx.fillStyle = "#77ee33";
       const highlights = [
         Point.fromAN(lastMove.start!),
         Point.fromAN(lastMove.end!),
@@ -278,7 +311,6 @@ const Amazons = defineComponent({
       ];
 
       highlights.forEach((hl) => {
-        ctx.fillStyle = "#77ee33";
         ctx.fillRect(
           hl.x * this.squareSize,
           hl.y * this.squareSize,
@@ -314,7 +346,10 @@ const Amazons = defineComponent({
         this.drawAmazon(ctx, x, y, Color.White);
       } else if (isBlackAmazon(squareState)) {
         this.drawAmazon(ctx, x, y, Color.Black);
-      } else if (squareState == SquareState.Arrow) {
+      } else if (
+        squareState == SquareState.Arrow &&
+        !this.isTerritoryVisualizationEnabled
+      ) {
         ctx.beginPath();
         ctx.arc(
           x * this.squareSize + this.squareSize / 2,
@@ -574,7 +609,6 @@ const Amazons = defineComponent({
         this.resetTurnState();
       }
     },
-
     onMouseUp(e: MouseEvent) {
       switch (this.turnState.phase) {
         case TurnPhase.AmazonMoving: {
@@ -596,16 +630,19 @@ const Amazons = defineComponent({
         }
       }
     },
+    isTerritoryVisualizationEnabledChanged(e: ListeningStateChangedEvent) {
+      this.draw();
+    },
   },
   computed: {
     blackTerritoryNumber(): number {
-      return this.blackTerritory.length;
+      return this.currentTerritory.black.length;
     },
     whiteTerritoryNumber(): number {
-      return this.whiteTerritory.length;
+      return this.currentTerritory.white.length;
     },
     contestedTerritoryNumber(): number {
-      return this.contestedTerritory.length;
+      return this.currentTerritory.contested.length;
     },
   },
 });
