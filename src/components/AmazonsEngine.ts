@@ -28,23 +28,23 @@ export function isBlackAmazon(s: SquareState) {
 }
 
 export class Territories {
-    _white = new Set<string>()
-    _black = new Set<string>()
-    _contested = new Set<string>()
-    _dead = new Set<string>()
+    _white = new Map<string,Point>()
+    _black = new Map<string,Point>()
+    _contested = new Map<string,Point>()
+    _dead = new Map<string,Point>()
 
-    get white(): Point[] {return Array.from(this._white).map(ps => Point.fromString(ps))}
-    get black(): Point[] {return Array.from(this._black).map(ps => Point.fromString(ps))}
-    get contested(): Point[] {return Array.from(this._contested).map(ps => Point.fromString(ps))}
-    get dead(): Point[] {return Array.from(this._dead).map(ps => Point.fromString(ps))}
+    get white(): Point[] {return Array.from(this._white.values())}
+    get black(): Point[] {return Array.from(this._black.values())}
+    get contested(): Point[] {return Array.from(this._contested.values())}
+    get dead(): Point[] {return Array.from(this._dead.values())}
 
     static calculateFromBoard(board: SquareState[][]): Territories {
         const result = new Territories()
         const sideSize = board.length
-        const unknown = new Set<string>()
+        const unknown = new Map<string,Point>()
         for (let y = 0; y < sideSize; y++) {
             for (let x = 0; x < sideSize; x++) {
-                unknown.add(new Point(x, y).toString())
+                unknown.set(new Point(x, y).toString(), new Point(x, y))
             }
         }
         let iterator = unknown.keys();
@@ -62,19 +62,19 @@ export class Territories {
                 }
             }
 
-            const tSet = this.findTerritory(next, board, new Set(), unknown, result._dead)
-            const territoryWithAmazons = Array.from(tSet).map(s => Point.fromString(s))
-            const hasWhiteAmazon = territoryWithAmazons.some(p => isWhiteAmazon(board[p.y][p.x]))
-            const hasBlackAmazon = territoryWithAmazons.some(p => isBlackAmazon(board[p.y][p.x]))
-            const territory = territoryWithAmazons.filter(p => !isAmazon(board[p.y][p.x]))
+            const territoryWithAmazons = this.findTerritory(next, board, new Map<string,Point>(), unknown, result._dead)!
+            const territoryWithAmazonsArray = Array.from(territoryWithAmazons.values());
+            const hasWhiteAmazon = territoryWithAmazonsArray.some(p => isWhiteAmazon(board[p.y][p.x]));
+            const hasBlackAmazon = territoryWithAmazonsArray.some(p => isBlackAmazon(board[p.y][p.x]));
+            const territory = new Map([...territoryWithAmazons].filter(([s,p]) => !isAmazon(board[p.x][p.y])));
             if (hasBlackAmazon && hasWhiteAmazon) {
-                territory.forEach(p => { result._contested.add(p.toString()); unknown.delete(p.toString()) });
+                for(const [str, point] of territory.entries()){result._contested.set(str,point); unknown.delete(str)}
             } else if (hasWhiteAmazon) {
-                territory.forEach(p => { result._white.add(p.toString()); unknown.delete(p.toString()) });
+                for(const [str, point] of territory.entries()){result._white.set(str,point); unknown.delete(str)}
             } else if (hasBlackAmazon) {
-                territory.forEach(p => { result._black.add(p.toString()); unknown.delete(p.toString()) });
+                for(const [str, point] of territory.entries()){result._black.set(str,point); unknown.delete(str)}
             } else {
-                territory.forEach(p => { result._dead.add(p.toString()); unknown.delete(p.toString()) });
+                for(const [str, point] of territory.entries()){result._dead.set(str,point); unknown.delete(str)}
             }
             iterator = unknown.keys();
         }
@@ -82,20 +82,20 @@ export class Territories {
         return result
     }
 
-    private static findTerritory(point: Point, board: SquareState[][], territory: Set<string>, unknown: Set<string>, dead: Set<string>): Set<string> {
+    private static findTerritory(point: Point, board: SquareState[][], territory: Map<string,Point>, unknown: Map<string,Point>, dead: Map<string,Point>): Map<string,Point>|null {
         const pointStr = point.toString()
         if (!unknown.has(pointStr)) {
-            return new Set();
+            return null;
         }
         if (board[point.y][point.x] == SquareState.Arrow) {
-            dead.add(pointStr)
+            dead.set(pointStr, point)
             unknown.delete(pointStr)
-            return new Set();
+            return null;
         } else if (board[point.y][point.x] != SquareState.Empty) {
-            return new Set();
+            return null;
         }
         unknown.delete(pointStr)
-        territory.add(pointStr)
+        territory.set(pointStr,point)
         const visitQueue: Point[] = [];
         DIRECTIONS.forEach(d => {
             const neighbor = new Point(point.x + d.x, point.y + d.y);
@@ -104,13 +104,13 @@ export class Territories {
                 switch (board[neighbor.y][neighbor.x]) {
                     case SquareState.Arrow:
                         unknown.delete(neighborStr)
-                        dead.add(neighborStr)
+                        dead.set(neighborStr, neighbor)
                         break;
                     case SquareState.Empty:
                         visitQueue.push(neighbor)
                         break;
                     default:// Add amazon to territory.
-                        territory.add(neighborStr)
+                        territory.set(neighborStr, neighbor)
                         break;
                 }
             }
