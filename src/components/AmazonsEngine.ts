@@ -210,8 +210,7 @@ export class AmazonsEngine {
         const newMove = new Move(start.toAN(), end.toAN(), arrow.toAN());
         this.store.dispatch(ActionTypes.MAKE_MOVE_ON_HISTORY, newMove)
 
-        const t = Territories.calculateFromBoard(this.store.getters.board)
-        console.log(t._contested)
+        Territories.calculateFromBoard(this.store.getters.board)
     }
 
     backMove() {//move to action?

@@ -201,12 +201,13 @@ export type Store = Omit<
   ): ReturnType<Actions[K]>;
 };
 
+const isDevEnvironment = process.env.NODE_ENV === 'development'
 export const store = createStore({
   state,
   mutations,
   actions,
   getters,
-  plugins: [createLogger()]
+  plugins: isDevEnvironment ? [createLogger()] : []
 });
 
 export function useStore() {
