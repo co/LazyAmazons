@@ -1,7 +1,8 @@
 import { Point } from './Point'
 import { Color } from './Color'
 import { SquareState } from './SquareState'
-import { MoveHistory } from './MoveHistory'
+import { ActionTypes, MutationTypes, Store } from '@/store'
+import { Move } from './Move'
 
 const UP = { x: 0, y: -1 }
 const DOWN = { x: 0, y: 1 }
@@ -28,20 +29,20 @@ export function isBlackAmazon(s: SquareState) {
 }
 
 export class Territories {
-    _white = new Map<string,Point>()
-    _black = new Map<string,Point>()
-    _contested = new Map<string,Point>()
-    _dead = new Map<string,Point>()
+    _white = new Map<string, Point>()
+    _black = new Map<string, Point>()
+    _contested = new Map<string, Point>()
+    _dead = new Map<string, Point>()
 
-    get white(): Point[] {return Array.from(this._white.values())}
-    get black(): Point[] {return Array.from(this._black.values())}
-    get contested(): Point[] {return Array.from(this._contested.values())}
-    get dead(): Point[] {return Array.from(this._dead.values())}
+    get white(): Point[] { return Array.from(this._white.values()) }
+    get black(): Point[] { return Array.from(this._black.values()) }
+    get contested(): Point[] { return Array.from(this._contested.values()) }
+    get dead(): Point[] { return Array.from(this._dead.values()) }
 
     static calculateFromBoard(board: SquareState[][]): Territories {
         const result = new Territories()
         const sideSize = board.length
-        const unknown = new Map<string,Point>()
+        const unknown = new Map<string, Point>()
         for (let y = 0; y < sideSize; y++) {
             for (let x = 0; x < sideSize; x++) {
                 unknown.set(new Point(x, y).toString(), new Point(x, y))
@@ -52,29 +53,29 @@ export class Territories {
             let next = Point.fromString(iterator.next().value);
             while (isAmazon(board[next.y][next.x])) {
                 const nextValue = iterator.next().value
-                if(nextValue)
-                {
+                if (nextValue) {
                     next = Point.fromString(nextValue);
                 }
-                else{
+                else {
                     console.log("How did we get here?")
                     return result
                 }
             }
 
-            const territoryWithAmazons = this.findTerritory(next, board, new Map<string,Point>(), unknown, result._dead)!
+            const territoryWithAmazons = new Map<string, Point>(); // Will be populated by find Territory
+            this.findTerritory(next, board, territoryWithAmazons, unknown, result._dead)
             const territoryWithAmazonsArray = Array.from(territoryWithAmazons.values());
             const hasWhiteAmazon = territoryWithAmazonsArray.some(p => isWhiteAmazon(board[p.y][p.x]));
             const hasBlackAmazon = territoryWithAmazonsArray.some(p => isBlackAmazon(board[p.y][p.x]));
-            const territory = new Map([...territoryWithAmazons].filter(([s,p]) => !isAmazon(board[p.x][p.y])));
+            const territory = new Map([...territoryWithAmazons].filter(([s, p]) => !isAmazon(board[p.x][p.y])));
             if (hasBlackAmazon && hasWhiteAmazon) {
-                for(const [str, point] of territory.entries()){result._contested.set(str,point); unknown.delete(str)}
+                for (const [str, point] of territory.entries()) { result._contested.set(str, point); unknown.delete(str) }
             } else if (hasWhiteAmazon) {
-                for(const [str, point] of territory.entries()){result._white.set(str,point); unknown.delete(str)}
+                for (const [str, point] of territory.entries()) { result._white.set(str, point); unknown.delete(str) }
             } else if (hasBlackAmazon) {
-                for(const [str, point] of territory.entries()){result._black.set(str,point); unknown.delete(str)}
+                for (const [str, point] of territory.entries()) { result._black.set(str, point); unknown.delete(str) }
             } else {
-                for(const [str, point] of territory.entries()){result._dead.set(str,point); unknown.delete(str)}
+                for (const [str, point] of territory.entries()) { result._dead.set(str, point); unknown.delete(str) }
             }
             iterator = unknown.keys();
         }
@@ -82,20 +83,20 @@ export class Territories {
         return result
     }
 
-    private static findTerritory(point: Point, board: SquareState[][], territory: Map<string,Point>, unknown: Map<string,Point>, dead: Map<string,Point>): Map<string,Point>|null {
+    private static findTerritory(point: Point, board: SquareState[][], territory: Map<string, Point>, unknown: Map<string, Point>, dead: Map<string, Point>): void{
         const pointStr = point.toString()
         if (!unknown.has(pointStr)) {
-            return null;
+            return;
         }
         if (board[point.y][point.x] == SquareState.Arrow) {
             dead.set(pointStr, point)
             unknown.delete(pointStr)
-            return null;
+            return;
         } else if (board[point.y][point.x] != SquareState.Empty) {
-            return null;
+            return;
         }
         unknown.delete(pointStr)
-        territory.set(pointStr,point)
+        territory.set(pointStr, point)
         const visitQueue: Point[] = [];
         DIRECTIONS.forEach(d => {
             const neighbor = new Point(point.x + d.x, point.y + d.y);
@@ -116,13 +117,12 @@ export class Territories {
             }
         });
         visitQueue.forEach(p => { this.findTerritory(p, board, territory, unknown, dead) });
-        return territory
+        return;
     }
 }
 
 export class AmazonsEngine {
-    board: SquareState[][]
-    history: MoveHistory
+    store: Store
     crossStartPosition = [
         [SquareState.White1, "d1"],
         [SquareState.White2, "d10"],
@@ -146,23 +146,18 @@ export class AmazonsEngine {
         [SquareState.White4, "j4"]]
 
     get turn(): Color {
-        return this.history.turnNumber % 2 == 1 ? Color.White : Color.Black
+        // +2 to handle -1 case.
+        return (this.store.getters.currentMoveNumber + 2) % 2 == 1 ? Color.White : Color.Black
     }
 
-    constructor() {
-        this.board = []
-        this.history = new MoveHistory()
+    constructor(store: Store) {
+        this.store = store;
         this.resetBoard(this.amazonsStartPosition)
     }
 
     private setEmptyBoard() {
-        this.board = []
-        for (let i = 0; i < 10; i++) {
-            this.board[i] = [];
-            for (let j = 0; j < 10; j++) {
-                this.board[i][j] = SquareState.Empty
-            }
-        }
+        this.store.commit(MutationTypes.SET_EMPTY_BOARD)
+
     }
 
 
@@ -171,7 +166,7 @@ export class AmazonsEngine {
         piecesStartLocations.forEach(pl => {
             this.setSquareAn(pl[1], pl[0]);
         });
-        this.history.reset();
+        this.store.dispatch(ActionTypes.RESET_MOVE_HISTORY);
     }
 
     playGameFromString(gameLog: string) {
@@ -204,55 +199,54 @@ export class AmazonsEngine {
             start.x == arrow.x && start!.y == arrow.y)) {
             throw `Tried to make invalid move: start:${start} end:${end} arrow:${arrow}`
         }
-        const amazon = this.board[start.y][start.x]
+        const amazon = this.store.getters.squareStateByPoint(start)
         if (amazon in [SquareState.Empty, SquareState.Arrow]) {
             throw "Tried to move amazon, but tile had no amazon. At tile: " + start
         }
 
-        this.board[start.y][start.x] = SquareState.Empty;
-        this.board[end.y][end.x] = amazon;
-        this.board[arrow.y][arrow.x] = SquareState.Arrow;
-        this.history.makeMove(start, end, arrow)
+        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: start, squareState: SquareState.Empty });
+        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: end, squareState: amazon });
+        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: arrow, squareState: SquareState.Arrow });
+        const newMove = new Move(start.toAN(), end.toAN(), arrow.toAN());
+        this.store.dispatch(ActionTypes.MAKE_MOVE_ON_HISTORY, newMove)
 
-        const t = Territories.calculateFromBoard(this.board)
+        const t = Territories.calculateFromBoard(this.store.getters.board)
         console.log(t._contested)
     }
 
-    backMove() {
-        const bm = this.history.goBack()
-        console.log(bm)
-        if (bm) {
-            this.setSquareAn(bm.arrow, SquareState.Empty)
-            this.setSquareAn(bm.start, this.getSquareState(Point.fromAN(bm.end)))
-            this.setSquareAn(bm.end, SquareState.Empty)
+    backMove() {//move to action?
+        if (this.store.getters.currentMoveNumber > -1) {
+            const move = this.store.getters.currentMove;
+            this.store.commit(MutationTypes.DECREASE_MOVE_NUMBER);
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.arrow), squareState: SquareState.Empty });
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.start), squareState: this.store.getters.squareStateByPoint(Point.fromAN(move.end)) });
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.end), squareState: SquareState.Empty });
         }
     }
 
 
 
-    nextMove() {
-        const nm = this.history.goNext()
-        console.log(nm)
-        if (nm) {
-            this.setSquareAn(nm.end, this.getSquareState(Point.fromAN(nm.start)))
-            this.setSquareAn(nm.start, SquareState.Empty)
-            this.setSquareAn(nm.arrow, SquareState.Arrow)
+    nextMove() {//move to action?
+
+        if (this.store.getters.moves.length > this.store.getters.currentMoveNumber + 1) {
+            this.store.commit(MutationTypes.INCREASE_MOVE_NUMBER);
+            const move = this.store.getters.currentMove;
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.end), squareState: this.store.getters.squareStateByPoint(Point.fromAN(move.start)) });
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.start), squareState: SquareState.Empty });
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.arrow), squareState: SquareState.Arrow });
         }
     }
 
-    getSquareState(p: Point) {
-        return this.board[p.y][p.x]
-    }
 
     moveAmazon(start: Point, end: Point) {
-        const startPiece = this.board[start.y][start.x]
+        const startPiece = this.store.getters.squareStateByPoint(start);
         if (startPiece in [SquareState.Empty, SquareState.Arrow]) {
             throw "Tried to move amazon, but tile had no amazon. At tile: " + start
         }
 
         if (this.isPointQueenMoveAway(start, end)) {
-            this.board[start.y][start.x] = SquareState.Empty
-            this.board[end.y][end.x] = startPiece
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: start, squareState: SquareState.Empty })
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: end, squareState: startPiece });
         }
         else {
             throw "Tried to move amazon, but the move was not legal. start: " + start
@@ -269,7 +263,7 @@ export class AmazonsEngine {
 
     setSquareAn(positionAN: string, state: SquareState) {
         const point = Point.fromAN(positionAN)
-        this.board[point.y][point.x] = state
+        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: point, squareState: state });
     }
 
     IsSquareOnBoardAndEmpty(x: number, y: number) {
@@ -277,7 +271,7 @@ export class AmazonsEngine {
             return false
         }
 
-        return this.board[y][x] == SquareState.Empty
+        return this.store.getters.squareStateByPoint(new Point(x, y)) == SquareState.Empty
     }
 
     getPossibleQueenMovesFromPoint(p: Point) {
@@ -311,7 +305,7 @@ export class AmazonsEngine {
         let output = ""
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < 10; j++) {
-                switch (this.board[i][j]) {
+                switch (this.store.getters.squareStateByPoint({ x: j, y: i })) {
                     case SquareState.Empty:
                         output += ". "
                         break;

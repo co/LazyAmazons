@@ -42,13 +42,13 @@ import { defineComponent } from "vue";
 import { Point } from "./Point";
 import { Color } from "./Color";
 import { SquareState } from "./SquareState";
-import HistoryList from "./HistoryList.vue";
 import {
   AmazonsEngine,
   isWhiteAmazon,
   isBlackAmazon,
   Territories,
 } from "./AmazonsEngine";
+import { useStore } from '@/store';
 
 enum TurnPhase {
   Start,
@@ -98,27 +98,16 @@ const Amazons = defineComponent({
   },
   data() {
     return {
+      store: useStore(),
       boardSize: 10,
       boardWidth: -1,
       squareSize: -1,
       canvas: (null as unknown) as HTMLCanvasElement,
-      blackAmazons: [
-        { x: 0, y: 3 },
-        { x: 3, y: 0 },
-        { x: 6, y: 0 },
-        { x: 9, y: 3 },
-      ],
-      whiteAmazons: [
-        { x: 0, y: 6 },
-        { x: 3, y: 9 },
-        { x: 6, y: 9 },
-        { x: 9, y: 6 },
-      ],
       blackAmazonImage: (null as unknown) as HTMLImageElement,
       whiteAmazonImage: (null as unknown) as HTMLImageElement,
       legalPositions: [] as Point[],
       turnState: new TurnState(),
-      game: new AmazonsEngine(),
+      game: new AmazonsEngine(useStore()),
       currentTerritory: new Territories(),
       isTerritoryVisualizationEnabled: false,
     };
@@ -156,7 +145,7 @@ const Amazons = defineComponent({
   },
   methods: {
     calculateTerritory() {
-      this.currentTerritory = Territories.calculateFromBoard(this.game.board);
+      this.currentTerritory = Territories.calculateFromBoard(this.store.getters.board);
     },
     updateBoardParameters() {
       const shortestWindowSide = Math.min(
@@ -263,9 +252,7 @@ const Amazons = defineComponent({
     },
     drawShootingAmazon(ctx: CanvasRenderingContext2D) {
       if (this.turnState.phase == TurnPhase.WaitingToShoot) {
-        const movingAmazon = this.game.getSquareState(
-          this.turnState.previousPosition!
-        );
+        const movingAmazon = this.store.getters.squareStateByPoint(this.turnState.previousPosition!);
         const shootingPosition = this.turnState.positionToShootFrom!;
         this.drawSquareState(
           ctx,
@@ -289,7 +276,7 @@ const Amazons = defineComponent({
             this.squareSize,
             this.squareSize
           );
-          const squareState = this.game.getSquareState(new Point(x, y));
+        const squareState = this.store.getters.squareStateByPoint({x:x, y:y});
           isWhite = !isWhite;
         }
         isWhite = !isWhite;
@@ -297,7 +284,7 @@ const Amazons = defineComponent({
     },
 
     drawPreviousMoveHighlight(ctx: CanvasRenderingContext2D) {
-      const lastMove = this.game.history.current;
+      const lastMove = this.store.getters.currentMove;
       if (!lastMove) {
         return;
       }
@@ -330,7 +317,7 @@ const Amazons = defineComponent({
             ctx,
             x,
             y,
-            this.game.getSquareState(new Point(x, y))
+            this.store.getters.squareStateByPoint({x:x, y:y})
           );
         }
       }
@@ -421,7 +408,7 @@ const Amazons = defineComponent({
       this.draw();
       const ctx = this.canvas.getContext("2d")!;
       const isMovingPieceWhite = isWhiteAmazon(
-        this.game.getSquareState(this.turnState.previousPosition!)
+        this.store.getters.squareStateByPoint(this.turnState.previousPosition!)
       );
       if (isTouch) {
         const s = this.coordinateToSquare(x, y);
@@ -514,13 +501,13 @@ const Amazons = defineComponent({
 
     tryStartMoveAmazon(boardPosition: Point) {
       if (this.game.turn == Color.White) {
-        if (!isWhiteAmazon(this.game.getSquareState(boardPosition))) {
+        if (!isWhiteAmazon(this.store.getters.squareStateByPoint(boardPosition))) {
           return;
         }
       }
 
       if (this.game.turn == Color.Black) {
-        if (!isBlackAmazon(this.game.getSquareState(boardPosition))) {
+        if (!isBlackAmazon(this.store.getters.squareStateByPoint(boardPosition))) {
           return;
         }
       }
