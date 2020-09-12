@@ -67,7 +67,7 @@ export class Territories {
             const territoryWithAmazonsArray = Array.from(territoryWithAmazons.values());
             const hasWhiteAmazon = territoryWithAmazonsArray.some(p => isWhiteAmazon(board[p.y][p.x]));
             const hasBlackAmazon = territoryWithAmazonsArray.some(p => isBlackAmazon(board[p.y][p.x]));
-            const territory = new Map([...territoryWithAmazons].filter(([s, p]) => !isAmazon(board[p.x][p.y])));
+            const territory = new Map([...territoryWithAmazons].filter(([s, p]) => !isAmazon(board[p.y][p.x])));
             if (hasBlackAmazon && hasWhiteAmazon) {
                 for (const [str, point] of territory.entries()) { result._contested.set(str, point); unknown.delete(str) }
             } else if (hasWhiteAmazon) {
