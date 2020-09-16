@@ -28,6 +28,10 @@ export function isBlackAmazon(s: SquareState) {
     return [SquareState.Black1, SquareState.Black2, SquareState.Black3, SquareState.Black4].some(p => p == s)
 }
 
+export function cloneBoard(b: SquareState[][]) {
+    return b.map(row => row.map(square => square))
+}
+
 export class Territories {
     _white = new Map<string, Point>()
     _black = new Map<string, Point>()
@@ -206,10 +210,7 @@ export class AmazonsEngine {
             throw "Tried to move amazon, but tile had no amazon. At tile: " + start
         }
 
-        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: start, squareState: SquareState.Empty });
-        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: end, squareState: amazon });
-        this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: arrow, squareState: SquareState.Arrow });
-        const newMove = new Move(start.toAN(), end.toAN(), arrow.toAN());
+        const newMove = new Move(start, end, arrow);
         this.store.dispatch(ActionTypes.MAKE_MOVE_ON_HISTORY, newMove)
 
         Territories.calculateFromBoard(this.store.getters.board)
@@ -217,47 +218,14 @@ export class AmazonsEngine {
 
     backMove() {//move to action?
         if (this.store.getters.currentMoveNumber > -1) {
-            const move = this.store.getters.currentMove;
-            this.store.dispatch(ActionTypes.DECREASE_MOVE_NUMBER);
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.arrow), squareState: SquareState.Empty });
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.start), squareState: this.store.getters.squareStateByPoint(Point.fromAN(move.end)) });
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.end), squareState: SquareState.Empty });
+            this.store.dispatch(ActionTypes.JUMP_TO_MOVE_NUMBER, this.store.getters.currentMoveNumber - 1);
         }
-    }
-
-
-
-    setBoardToCurrentMove() {//move to action?
-
-        this.setEmptyBoard();
-        this.startPosition.forEach(pl => {
-            this.setSquareAn(pl.point, pl.state);
-        });
-
-        const moves = this.store.getters.moves.slice(0, this.store.getters.currentMoveNumber)
-        moves.forEach((m) => {
-            const start = Point.fromAN(m.start)
-            const end = Point.fromAN(m.end)
-            const arrow = Point.fromAN(m.arrow)
-            const amazon = this.store.getters.squareStateByPoint(start)
-            if (amazon in [SquareState.Empty, SquareState.Arrow]) {
-                throw "Tried to move amazon, but tile had no amazon. At tile: " + start
-            }
-
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: start, squareState: SquareState.Empty });
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: end, squareState: amazon });
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: arrow, squareState: SquareState.Arrow });
-        });
     }
 
     nextMove() {//move to action?
 
         if (this.store.getters.moves.length > this.store.getters.currentMoveNumber + 1) {
-            this.store.dispatch(ActionTypes.INCREASE_MOVE_NUMBER);
-            const move = this.store.getters.currentMove;
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.end), squareState: this.store.getters.squareStateByPoint(Point.fromAN(move.start)) });
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.start), squareState: SquareState.Empty });
-            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.arrow), squareState: SquareState.Arrow });
+            this.store.dispatch(ActionTypes.JUMP_TO_MOVE_NUMBER, this.store.getters.currentMoveNumber + 1);
         }
     }
 
@@ -329,7 +297,7 @@ export class AmazonsEngine {
         let output = ""
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < 10; j++) {
-                switch (this.store.getters.squareStateByPoint({ x: j, y: i })) {
+                switch (this.store.getters.squareStateByPoint(new Point(j, i))) {
                     case SquareState.Empty:
                         output += ". "
                         break;

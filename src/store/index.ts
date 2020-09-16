@@ -1,14 +1,15 @@
-import { Move } from '@/components/Move';
+import { cloneBoard } from '@/components/AmazonsEngine';
+import { Move, MoveState } from '@/components/Move';
 import { Point } from '@/components/Point';
 import { SquareState } from '@/components/SquareState';
 import { Store as VuexStore, createStore, MutationTree, ActionContext, ActionTree, GetterTree, CommitOptions, DispatchOptions, createLogger } from 'vuex';
 
-export type State = { currentMoveNumber: number; moves: Move[]; board: SquareState[][] };
+export type State = { currentMoveNumber: number; moveStates: MoveState[]; board: SquareState[][] };
 
 //set state
 const state: State = {
   currentMoveNumber: -1, //-1 => no moves
-  moves: [],
+  moveStates: [],
   board: []
 };
 
@@ -23,22 +24,17 @@ export enum MutationTypes {
 
   SET_SQUARE_STATE = "SET_SQUARE_STATE",
   SET_EMPTY_BOARD = "SET_EMPTY_BOARD",
-  SET_CURRENT_MOVE = "SET_CURRENT_MOVE"
+  SET_CURRENT_MOVE = "SET_CURRENT_MOVE",
+  SET_BOARD = "SET_BOARD"
 }
-
-
-
-
-
-
-
 
 export enum ActionTypes {
   SET_CURRENT_MOVE_NUMBER = "SET_CURRENT_MOVE_NUMBER",
   RESET_MOVE_HISTORY = "RESET_MOVE_HISTORY",
   MAKE_MOVE_ON_HISTORY = "MAKE_MOVE_ON_HISTORY",
   INCREASE_MOVE_NUMBER = "INCREASE_MOVE_NUMBER",
-  DECREASE_MOVE_NUMBER = "DECREASE_MOVE_NUMBER"
+  DECREASE_MOVE_NUMBER = "DECREASE_MOVE_NUMBER",
+  JUMP_TO_MOVE_NUMBER = "JUMP_TO_MOVE_NUMBER"
 }
 
 
@@ -47,11 +43,12 @@ export type Mutations<S = State> = {
   [MutationTypes.SET_CURRENT_MOVE_NUMBER](state: S, payload: number): void;
   [MutationTypes.EMPTY_MOVE_HISTORY](state: S): void;
   [MutationTypes.DROP_MOVES_AFTER_NOW](state: S): void;
-  [MutationTypes.PUSH_MOVE_TO_HISTORY](state: S, payload: Move): void;
-  [MutationTypes.SET_CURRENT_MOVE](state: S, payload: Move): void;
+  [MutationTypes.PUSH_MOVE_TO_HISTORY](state: S, payload: MoveState): void;
+  [MutationTypes.SET_CURRENT_MOVE](state: S, payload: MoveState): void;
   [MutationTypes.GO_TO_MOVE_NUMBER](state: S, payload: number): void;
   [MutationTypes.SET_SQUARE_STATE](state: S, payload: { point: Point; squareState: SquareState }): void;
   [MutationTypes.SET_EMPTY_BOARD](state: S): void;
+  [MutationTypes.SET_BOARD](state: S, board: SquareState[][]): void;
 };
 
 //define mutations
@@ -60,16 +57,16 @@ const mutations: MutationTree<State> & Mutations = {
     state.currentMoveNumber = payload
   },
   [MutationTypes.EMPTY_MOVE_HISTORY](state: State) {
-    state.moves = []
+    state.moveStates = []
   },
   [MutationTypes.DROP_MOVES_AFTER_NOW](state: State) {
-    state.moves = state.moves.slice(0, state.currentMoveNumber + 1)
+    state.moveStates = state.moveStates.slice(0, state.currentMoveNumber + 1)
   },
-  [MutationTypes.PUSH_MOVE_TO_HISTORY](state: State, payload: Move) {
-    state.moves.push(payload)
+  [MutationTypes.PUSH_MOVE_TO_HISTORY](state: State, payload: MoveState) {
+    state.moveStates.push(payload)
   },
-  [MutationTypes.SET_CURRENT_MOVE](state: State, payload: Move) {
-    state.moves[state.currentMoveNumber] = payload
+  [MutationTypes.SET_CURRENT_MOVE](state: State, payload: MoveState) {
+    state.moveStates[state.currentMoveNumber] = payload
   },
 
   [MutationTypes.GO_TO_MOVE_NUMBER](state: State, payload: number) {
@@ -77,6 +74,9 @@ const mutations: MutationTree<State> & Mutations = {
   },
   [MutationTypes.SET_SQUARE_STATE](state: State, payload: { point: Point; squareState: SquareState }) {
     state.board[payload.point.y][payload.point.x] = payload.squareState;
+  },
+  [MutationTypes.SET_BOARD](state: State, payload: SquareState[][]) {
+    state.board = payload;
   },
   [MutationTypes.SET_EMPTY_BOARD](state: State) {
     const board = [] as SquareState[][]
@@ -107,7 +107,7 @@ type AugmentedActionContext = {
 // actions interface
 
 export interface Actions {
-  [ActionTypes.SET_CURRENT_MOVE_NUMBER](
+  [ActionTypes.JUMP_TO_MOVE_NUMBER](
     { commit }: AugmentedActionContext,
     payload: number
   ): void;
@@ -127,8 +127,9 @@ export interface Actions {
 }
 
 export const actions: ActionTree<State, State> & Actions = {
-  [ActionTypes.SET_CURRENT_MOVE_NUMBER]({ commit }, payload: number) {
+  [ActionTypes.JUMP_TO_MOVE_NUMBER]({ commit }, payload: number) {
     commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, payload);
+    commit(MutationTypes.SET_BOARD, state.moveStates[payload].boardState);
   },
   [ActionTypes.RESET_MOVE_HISTORY]({ commit }) {
     commit(MutationTypes.EMPTY_MOVE_HISTORY);
@@ -141,12 +142,16 @@ export const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber - 1);
   },
   [ActionTypes.MAKE_MOVE_ON_HISTORY]({ commit }, payload: Move) {
+    const amazon = state.board[payload.start.y][payload.start.x]
+    commit(MutationTypes.SET_SQUARE_STATE, { point: payload.start, squareState: SquareState.Empty });
+    commit(MutationTypes.SET_SQUARE_STATE, { point: payload.end, squareState: amazon });
+    commit(MutationTypes.SET_SQUARE_STATE, { point: payload.arrow, squareState: SquareState.Arrow });
     commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber + 1);
-    if (state.currentMoveNumber == state.moves.length) {
-      commit(MutationTypes.PUSH_MOVE_TO_HISTORY, payload);
+    if (state.currentMoveNumber == state.moveStates.length) {
+      commit(MutationTypes.PUSH_MOVE_TO_HISTORY, new MoveState(payload, cloneBoard(state.board)));
     }
     else {
-      commit(MutationTypes.SET_CURRENT_MOVE, payload);
+      commit(MutationTypes.SET_CURRENT_MOVE, new MoveState(payload, cloneBoard(state.board)));
       commit(MutationTypes.DROP_MOVES_AFTER_NOW);
     }
   },
@@ -155,9 +160,9 @@ export const actions: ActionTree<State, State> & Actions = {
 // Getters types
 export type Getters = {
   currentMoveNumber(state: State): number;
-  currentMove(state: State): Move;
+  currentMoveState(state: State): MoveState;
   moves(state: State): Move[];
-  squareStateByPoint(state: State): (p: { x: number; y: number }) => SquareState;
+  squareStateByPoint(state: State): (p: Point) => SquareState;
   board(state: State): SquareState[][];
 };
 
@@ -167,13 +172,13 @@ export const getters: GetterTree<State, State> & Getters = {
   currentMoveNumber: state => {
     return state.currentMoveNumber;
   },
-  currentMove: state => {
-    return state.moves[state.currentMoveNumber];
+  currentMoveState: state => {
+    return state.moveStates[state.currentMoveNumber];
   },
   moves: state => {
-    return state.moves;
+    return state.moveStates.map(ms => ms.move);
   },
-  squareStateByPoint: state => (p: { x: number; y: number }) => {
+  squareStateByPoint: state => (p: Point) => {
     return state.board[p.y][p.x]
   },
   board: state => {

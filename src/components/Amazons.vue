@@ -138,15 +138,21 @@ const Amazons = defineComponent({
     this.canvas.addEventListener("touchmove", this.onTouchMove);
     this.canvas.addEventListener("touchend", this.onTouchEnd);
     document.addEventListener("keydown", this.onKeyDown);
+    this.calculateTerritory();
     this.store.subscribe((mutation, state) => {
-      if (mutation.type == MutationTypes.SET_CURRENT_MOVE_NUMBER) {
-        this.resetTurnState();
-        this.game.setBoardToCurrentMove();
-        this.calculateTerritory(); //todo: the move should trigger this!
-        this.draw();
+      switch (mutation.type) {
+        case MutationTypes.PUSH_MOVE_TO_HISTORY:
+        case MutationTypes.SET_CURRENT_MOVE:
+        case MutationTypes.SET_BOARD:
+          this.calculateTerritory();
+          this.resetTurnState();
+          this.draw();
+          break;
+
+        default:
+          break;
       }
     });
-    this.calculateTerritory();
     this.draw();
   },
   methods: {
@@ -174,17 +180,11 @@ const Amazons = defineComponent({
       this.turnState.reset();
     },
     stepToPreviousMove() {
-      this.resetTurnState();
       this.game.backMove();
-      this.calculateTerritory(); //todo: the move should trigger this!
-      this.draw();
     },
 
     stepToNextMove() {
-      this.resetTurnState();
       this.game.nextMove();
-      this.calculateTerritory(); //todo: the move should trigger this!
-      this.draw();
     },
 
     loadGameFromClipboard() {
@@ -286,10 +286,9 @@ const Amazons = defineComponent({
             this.squareSize,
             this.squareSize
           );
-          const squareState = this.store.getters.squareStateByPoint({
-            x: x,
-            y: y,
-          });
+          const squareState = this.store.getters.squareStateByPoint(
+            new Point(x, y)
+          );
           isWhite = !isWhite;
         }
         isWhite = !isWhite;
@@ -297,18 +296,14 @@ const Amazons = defineComponent({
     },
 
     drawPreviousMoveHighlight(ctx: CanvasRenderingContext2D) {
-      const lastMove = this.store.getters.currentMove;
+      const lastMove = this.store.getters.currentMoveState?.move;
       if (!lastMove) {
         return;
       }
 
       ctx.globalAlpha = 0.3;
       ctx.fillStyle = "#77ee33";
-      const highlights = [
-        Point.fromAN(lastMove.start!),
-        Point.fromAN(lastMove.end!),
-        Point.fromAN(lastMove.arrow!),
-      ];
+      const highlights = [lastMove.start, lastMove.end, lastMove.arrow];
 
       highlights.forEach((hl) => {
         ctx.fillRect(
@@ -330,7 +325,7 @@ const Amazons = defineComponent({
             ctx,
             x,
             y,
-            this.store.getters.squareStateByPoint({ x: x, y: y })
+            this.store.getters.squareStateByPoint(new Point(x, y))
           );
         }
       }
