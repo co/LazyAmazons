@@ -4,7 +4,7 @@
     <button class="ghost-button" @click="stepToPreviousMove">prev</button>
     <button class="ghost-button" @click="loadGameFromClipboard">load</button>
     <button class="ghost-button" @click="stepToNextMove">next</button>
-    <p/>
+    <p />
     <div style="width=110px; display: inline-block;">
       <div style=" width=110px">
         <div class="territoryCounterLeft blackOnWhite">White</div>
@@ -19,7 +19,7 @@
         <div class="territoryCounterRight whiteOnBlack">{{blackTerritoryNumber}}</div>
       </div>
     </div>
-    <p/>
+    <p />
     <div class="toggleWithDescription">
       <div class="toggleDescription">Territory visualization</div>
       <div class="onoffswitch">
@@ -36,6 +36,7 @@
       </div>
     </div>
   </div>
+  <HistoryList />
 </template>
 <script lang="ts">
 import { defineComponent } from "vue";
@@ -48,7 +49,7 @@ import {
   isBlackAmazon,
   Territories,
 } from "./AmazonsEngine";
-import { useStore } from '@/store';
+import { MutationTypes, useStore } from "@/store";
 
 enum TurnPhase {
   Start,
@@ -93,9 +94,6 @@ class TurnState {
 }
 
 const Amazons = defineComponent({
-  props: {
-    size: Number,
-  },
   data() {
     return {
       store: useStore(),
@@ -140,12 +138,22 @@ const Amazons = defineComponent({
     this.canvas.addEventListener("touchmove", this.onTouchMove);
     this.canvas.addEventListener("touchend", this.onTouchEnd);
     document.addEventListener("keydown", this.onKeyDown);
+    this.store.subscribe((mutation, state) => {
+      if (mutation.type == MutationTypes.SET_CURRENT_MOVE_NUMBER) {
+        this.resetTurnState();
+        this.game.setBoardToCurrentMove();
+        this.calculateTerritory(); //todo: the move should trigger this!
+        this.draw();
+      }
+    });
     this.calculateTerritory();
     this.draw();
   },
   methods: {
     calculateTerritory() {
-      this.currentTerritory = Territories.calculateFromBoard(this.store.getters.board);
+      this.currentTerritory = Territories.calculateFromBoard(
+        this.store.getters.board
+      );
     },
     updateBoardParameters() {
       const shortestWindowSide = Math.min(
@@ -252,7 +260,9 @@ const Amazons = defineComponent({
     },
     drawShootingAmazon(ctx: CanvasRenderingContext2D) {
       if (this.turnState.phase == TurnPhase.WaitingToShoot) {
-        const movingAmazon = this.store.getters.squareStateByPoint(this.turnState.previousPosition!);
+        const movingAmazon = this.store.getters.squareStateByPoint(
+          this.turnState.previousPosition!
+        );
         const shootingPosition = this.turnState.positionToShootFrom!;
         this.drawSquareState(
           ctx,
@@ -276,7 +286,10 @@ const Amazons = defineComponent({
             this.squareSize,
             this.squareSize
           );
-        const squareState = this.store.getters.squareStateByPoint({x:x, y:y});
+          const squareState = this.store.getters.squareStateByPoint({
+            x: x,
+            y: y,
+          });
           isWhite = !isWhite;
         }
         isWhite = !isWhite;
@@ -317,7 +330,7 @@ const Amazons = defineComponent({
             ctx,
             x,
             y,
-            this.store.getters.squareStateByPoint({x:x, y:y})
+            this.store.getters.squareStateByPoint({ x: x, y: y })
           );
         }
       }
@@ -501,13 +514,17 @@ const Amazons = defineComponent({
 
     tryStartMoveAmazon(boardPosition: Point) {
       if (this.game.turn == Color.White) {
-        if (!isWhiteAmazon(this.store.getters.squareStateByPoint(boardPosition))) {
+        if (
+          !isWhiteAmazon(this.store.getters.squareStateByPoint(boardPosition))
+        ) {
           return;
         }
       }
 
       if (this.game.turn == Color.Black) {
-        if (!isBlackAmazon(this.store.getters.squareStateByPoint(boardPosition))) {
+        if (
+          !isBlackAmazon(this.store.getters.squareStateByPoint(boardPosition))
+        ) {
           return;
         }
       }

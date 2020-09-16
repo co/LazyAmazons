@@ -83,6 +83,7 @@
     color: black;
     float: left;
     font-size: 16px;
+    border: 0px;
 }
 
 .whiteOnBlack {
@@ -95,9 +96,25 @@
     color: black;
 }
 
+.blackOnGreen {
+    background-color: #A2A754;
+    color: black;
+}
+
 .whiteOnGrey {
     background-color: grey;
     color: white;
+}
+
+.moveListItem {
+    display: block;
+    height: 40px;
+    line-height: 40px;
+    text-decoration: none;
+    width: 100px;
+    text-align: center;
+    font-size: 10px;
+    float: left;
 }
 
 

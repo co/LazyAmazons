@@ -83,7 +83,7 @@ export class Territories {
         return result
     }
 
-    private static findTerritory(point: Point, board: SquareState[][], territory: Map<string, Point>, unknown: Map<string, Point>, dead: Map<string, Point>): void{
+    private static findTerritory(point: Point, board: SquareState[][], territory: Map<string, Point>, unknown: Map<string, Point>, dead: Map<string, Point>): void {
         const pointStr = point.toString()
         if (!unknown.has(pointStr)) {
             return;
@@ -124,26 +124,28 @@ export class Territories {
 export class AmazonsEngine {
     store: Store
     crossStartPosition = [
-        [SquareState.White1, "d1"],
-        [SquareState.White2, "d10"],
-        [SquareState.White3, "g1"],
-        [SquareState.White4, "g10"],
+        { state: SquareState.White1, point: "d1" },
+        { state: SquareState.White2, point: "d10" },
+        { state: SquareState.White3, point: "g1" },
+        { state: SquareState.White4, point: "g10" },
 
-        [SquareState.Black1, "a4"],
-        [SquareState.Black2, "a7"],
-        [SquareState.Black3, "j4"],
-        [SquareState.Black4, "j7"]]
+        { state: SquareState.Black1, point: "a4" },
+        { state: SquareState.Black2, point: "a7" },
+        { state: SquareState.Black3, point: "j4" },
+        { state: SquareState.Black4, point: "j7" }] as { state: SquareState; point: string }[]
 
     amazonsStartPosition = [
-        [SquareState.Black1, "a7"],
-        [SquareState.Black2, "d10"],
-        [SquareState.Black3, "g10"],
-        [SquareState.Black4, "j7"],
+        { state: SquareState.Black1, point: "a7" },
+        { state: SquareState.Black2, point: "d10" },
+        { state: SquareState.Black3, point: "g10" },
+        { state: SquareState.Black4, point: "j7" },
 
-        [SquareState.White1, "a4"],
-        [SquareState.White2, "d1"],
-        [SquareState.White3, "g1"],
-        [SquareState.White4, "j4"]]
+        { state: SquareState.White1, point: "a4" },
+        { state: SquareState.White2, point: "d1" },
+        { state: SquareState.White3, point: "g1" },
+        { state: SquareState.White4, point: "j4" }] as { state: SquareState; point: string }[]
+
+    startPosition = this.amazonsStartPosition
 
     get turn(): Color {
         // +2 to handle -1 case.
@@ -152,7 +154,7 @@ export class AmazonsEngine {
 
     constructor(store: Store) {
         this.store = store;
-        this.resetBoard(this.amazonsStartPosition)
+        this.resetBoard()
     }
 
     private setEmptyBoard() {
@@ -161,10 +163,10 @@ export class AmazonsEngine {
     }
 
 
-    resetBoard(piecesStartLocations: any[]) {
+    resetBoard() {
         this.setEmptyBoard();
-        piecesStartLocations.forEach(pl => {
-            this.setSquareAn(pl[1], pl[0]);
+        this.startPosition.forEach(pl => {
+            this.setSquareAn(pl.point, pl.state);
         });
         this.store.dispatch(ActionTypes.RESET_MOVE_HISTORY);
     }
@@ -189,8 +191,8 @@ export class AmazonsEngine {
             }
             i++
         }
-
-        this.resetBoard(isCrossSetup ? this.crossStartPosition : this.amazonsStartPosition);
+        this.startPosition = isCrossSetup ? this.crossStartPosition : this.amazonsStartPosition
+        this.resetBoard();
         moves.forEach((m) => this.makeMove(Point.fromAN(m.from), Point.fromAN(m.to), Point.fromAN(m.arrow)));
     }
 
@@ -216,7 +218,7 @@ export class AmazonsEngine {
     backMove() {//move to action?
         if (this.store.getters.currentMoveNumber > -1) {
             const move = this.store.getters.currentMove;
-            this.store.commit(MutationTypes.DECREASE_MOVE_NUMBER);
+            this.store.dispatch(ActionTypes.DECREASE_MOVE_NUMBER);
             this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.arrow), squareState: SquareState.Empty });
             this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.start), squareState: this.store.getters.squareStateByPoint(Point.fromAN(move.end)) });
             this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.end), squareState: SquareState.Empty });
@@ -225,10 +227,33 @@ export class AmazonsEngine {
 
 
 
+    setBoardToCurrentMove() {//move to action?
+
+        this.setEmptyBoard();
+        this.startPosition.forEach(pl => {
+            this.setSquareAn(pl.point, pl.state);
+        });
+
+        const moves = this.store.getters.moves.slice(0, this.store.getters.currentMoveNumber)
+        moves.forEach((m) => {
+            const start = Point.fromAN(m.start)
+            const end = Point.fromAN(m.end)
+            const arrow = Point.fromAN(m.arrow)
+            const amazon = this.store.getters.squareStateByPoint(start)
+            if (amazon in [SquareState.Empty, SquareState.Arrow]) {
+                throw "Tried to move amazon, but tile had no amazon. At tile: " + start
+            }
+
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: start, squareState: SquareState.Empty });
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: end, squareState: amazon });
+            this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: arrow, squareState: SquareState.Arrow });
+        });
+    }
+
     nextMove() {//move to action?
 
         if (this.store.getters.moves.length > this.store.getters.currentMoveNumber + 1) {
-            this.store.commit(MutationTypes.INCREASE_MOVE_NUMBER);
+            this.store.dispatch(ActionTypes.INCREASE_MOVE_NUMBER);
             const move = this.store.getters.currentMove;
             this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.end), squareState: this.store.getters.squareStateByPoint(Point.fromAN(move.start)) });
             this.store.commit(MutationTypes.SET_SQUARE_STATE, { point: Point.fromAN(move.start), squareState: SquareState.Empty });

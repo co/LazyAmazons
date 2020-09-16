@@ -20,8 +20,6 @@ export enum MutationTypes {
   DROP_MOVES_AFTER_NOW = "DROP_MOVES_AFTER_NOW",
   PUSH_MOVE_TO_HISTORY = "PUSH_MOVE_TO_HISTORY",
   GO_TO_MOVE_NUMBER = "GO_TO_MOVE_NUMBER",
-  INCREASE_MOVE_NUMBER = "INCREASE_MOVE_NUMBER",
-  DECREASE_MOVE_NUMBER = "DECREASE_MOVE_NUMBER",
 
   SET_SQUARE_STATE = "SET_SQUARE_STATE",
   SET_EMPTY_BOARD = "SET_EMPTY_BOARD",
@@ -29,10 +27,18 @@ export enum MutationTypes {
 }
 
 
+
+
+
+
+
+
 export enum ActionTypes {
   SET_CURRENT_MOVE_NUMBER = "SET_CURRENT_MOVE_NUMBER",
   RESET_MOVE_HISTORY = "RESET_MOVE_HISTORY",
-  MAKE_MOVE_ON_HISTORY = "MAKE_MOVE_ON_HISTORY"
+  MAKE_MOVE_ON_HISTORY = "MAKE_MOVE_ON_HISTORY",
+  INCREASE_MOVE_NUMBER = "INCREASE_MOVE_NUMBER",
+  DECREASE_MOVE_NUMBER = "DECREASE_MOVE_NUMBER"
 }
 
 
@@ -44,8 +50,6 @@ export type Mutations<S = State> = {
   [MutationTypes.PUSH_MOVE_TO_HISTORY](state: S, payload: Move): void;
   [MutationTypes.SET_CURRENT_MOVE](state: S, payload: Move): void;
   [MutationTypes.GO_TO_MOVE_NUMBER](state: S, payload: number): void;
-  [MutationTypes.INCREASE_MOVE_NUMBER](state: S): void;
-  [MutationTypes.DECREASE_MOVE_NUMBER](state: S): void;
   [MutationTypes.SET_SQUARE_STATE](state: S, payload: { point: Point; squareState: SquareState }): void;
   [MutationTypes.SET_EMPTY_BOARD](state: S): void;
 };
@@ -70,12 +74,6 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.GO_TO_MOVE_NUMBER](state: State, payload: number) {
     state.currentMoveNumber = payload
-  },
-  [MutationTypes.INCREASE_MOVE_NUMBER](state: State) {
-    state.currentMoveNumber ++
-  },
-  [MutationTypes.DECREASE_MOVE_NUMBER](state: State) {
-    state.currentMoveNumber --
   },
   [MutationTypes.SET_SQUARE_STATE](state: State, payload: { point: Point; squareState: SquareState }) {
     state.board[payload.point.y][payload.point.x] = payload.squareState;
@@ -116,6 +114,12 @@ export interface Actions {
   [ActionTypes.RESET_MOVE_HISTORY](
     { commit }: AugmentedActionContext
   ): void;
+  [ActionTypes.INCREASE_MOVE_NUMBER](
+    { commit }: AugmentedActionContext
+  ): void;
+  [ActionTypes.DECREASE_MOVE_NUMBER](
+    { commit }: AugmentedActionContext
+  ): void;
   [ActionTypes.MAKE_MOVE_ON_HISTORY](
     { commit }: AugmentedActionContext,
     payload: Move
@@ -130,8 +134,14 @@ export const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.EMPTY_MOVE_HISTORY);
     commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, -1);
   },
+  [ActionTypes.INCREASE_MOVE_NUMBER]({ commit }) {
+    commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber + 1);
+  },
+  [ActionTypes.DECREASE_MOVE_NUMBER]({ commit }) {
+    commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber - 1);
+  },
   [ActionTypes.MAKE_MOVE_ON_HISTORY]({ commit }, payload: Move) {
-    commit(MutationTypes.INCREASE_MOVE_NUMBER);
+    commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber + 1);
     if (state.currentMoveNumber == state.moves.length) {
       commit(MutationTypes.PUSH_MOVE_TO_HISTORY, payload);
     }
