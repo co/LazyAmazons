@@ -159,6 +159,7 @@ export class AmazonsEngine {
     constructor(store: Store) {
         this.store = store;
         this.resetBoard()
+        this.store.dispatch(ActionTypes.RESET_MOVE_HISTORY);
     }
 
     private setEmptyBoard() {
@@ -172,7 +173,6 @@ export class AmazonsEngine {
         this.startPosition.forEach(pl => {
             this.setSquareAn(pl.point, pl.state);
         });
-        this.store.dispatch(ActionTypes.RESET_MOVE_HISTORY);
     }
 
     playGameFromString(gameLog: string) {
@@ -197,6 +197,7 @@ export class AmazonsEngine {
         }
         this.startPosition = isCrossSetup ? this.crossStartPosition : this.amazonsStartPosition
         this.resetBoard();
+        this.store.dispatch(ActionTypes.RESET_MOVE_HISTORY);
         moves.forEach((m) => this.makeMove(Point.fromAN(m.from), Point.fromAN(m.to), Point.fromAN(m.arrow)));
     }
 
@@ -212,13 +213,16 @@ export class AmazonsEngine {
 
         const newMove = new Move(start, end, arrow);
         this.store.dispatch(ActionTypes.MAKE_MOVE_ON_HISTORY, newMove)
-
-        Territories.calculateFromBoard(this.store.getters.board)
     }
 
     backMove() {//move to action?
-        if (this.store.getters.currentMoveNumber > -1) {
-            this.store.dispatch(ActionTypes.JUMP_TO_MOVE_NUMBER, this.store.getters.currentMoveNumber - 1);
+        const previousMoveNumber = this.store.getters.currentMoveNumber - 1
+        if (previousMoveNumber == -1) {
+            this.resetBoard();
+            this.store.dispatch(ActionTypes.SET_CURRENT_MOVE_NUMBER, previousMoveNumber)
+        }
+        if (previousMoveNumber >= 0) {
+            this.store.dispatch(ActionTypes.JUMP_TO_MOVE_NUMBER, previousMoveNumber);
         }
     }
 

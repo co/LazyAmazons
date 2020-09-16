@@ -1,5 +1,5 @@
 <template>
-  <button v-for="(move, index) in this.moves" :key="index + move.toString()" :class="'moveListItem ' + (index == this.store.getters.currentMoveNumber ? 'blackOnGreen' : (index % 2 == 0 ? 'blackOnWhite' : 'whiteOnBlack'))" v-on:click="handleHistoryMoveItemClicked($event, index)">{{index +": " + move.toString()}}</button>
+  <button v-for="(move, index) in this.moves" :key="index + move.toString()" :class="'moveListItem ' + (index == this.store.getters.currentMoveNumber ? 'blackOnGreen' : (index % 2 == 0 ? 'blackOnWhite' : 'whiteOnBlack'))" v-on:click="handleHistoryMoveItemClicked($event, index)">{{(index+1) +": " + move.toString()}}</button>
 </template>
 <script lang="ts">
 import { ActionTypes, MutationTypes, useStore } from '@/store';

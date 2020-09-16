@@ -36,7 +36,6 @@
       </div>
     </div>
   </div>
-  <HistoryList />
 </template>
 <script lang="ts">
 import { defineComponent } from "vue";
@@ -143,6 +142,7 @@ const Amazons = defineComponent({
       switch (mutation.type) {
         case MutationTypes.PUSH_MOVE_TO_HISTORY:
         case MutationTypes.SET_CURRENT_MOVE:
+        case MutationTypes.SET_CURRENT_MOVE_NUMBER:
         case MutationTypes.SET_BOARD:
           this.calculateTerritory();
           this.resetTurnState();
@@ -191,8 +191,6 @@ const Amazons = defineComponent({
       this.resetTurnState();
       navigator.clipboard.readText().then((text) => {
         this.game.playGameFromString(text);
-        this.calculateTerritory(); //todo: the move should trigger this!
-        this.draw();
       });
     },
     draw() {
@@ -367,14 +365,6 @@ const Amazons = defineComponent({
         );
         ctx.fillStyle = "#888888";
         ctx.fill();
-        /*ctx.fillStyle = "#2e2f35";
-        ctx.fillRect(
-          x * this.squareSize,
-          y * this.squareSize,
-          this.squareSize,
-          this.squareSize
-        );
-        */
       }
     },
 
@@ -591,7 +581,6 @@ const Amazons = defineComponent({
           this.turnState.positionToShootFrom!,
           arrowHitPosition
         );
-        this.calculateTerritory(); //todo: the move should trigger this!
       }
       this.resetTurnState();
     },

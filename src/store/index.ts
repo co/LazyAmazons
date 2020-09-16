@@ -32,8 +32,6 @@ export enum ActionTypes {
   SET_CURRENT_MOVE_NUMBER = "SET_CURRENT_MOVE_NUMBER",
   RESET_MOVE_HISTORY = "RESET_MOVE_HISTORY",
   MAKE_MOVE_ON_HISTORY = "MAKE_MOVE_ON_HISTORY",
-  INCREASE_MOVE_NUMBER = "INCREASE_MOVE_NUMBER",
-  DECREASE_MOVE_NUMBER = "DECREASE_MOVE_NUMBER",
   JUMP_TO_MOVE_NUMBER = "JUMP_TO_MOVE_NUMBER"
 }
 
@@ -107,17 +105,15 @@ type AugmentedActionContext = {
 // actions interface
 
 export interface Actions {
+  [ActionTypes.SET_CURRENT_MOVE_NUMBER](
+    { commit }: AugmentedActionContext,
+    payload: number
+  ): void;
   [ActionTypes.JUMP_TO_MOVE_NUMBER](
     { commit }: AugmentedActionContext,
     payload: number
   ): void;
   [ActionTypes.RESET_MOVE_HISTORY](
-    { commit }: AugmentedActionContext
-  ): void;
-  [ActionTypes.INCREASE_MOVE_NUMBER](
-    { commit }: AugmentedActionContext
-  ): void;
-  [ActionTypes.DECREASE_MOVE_NUMBER](
     { commit }: AugmentedActionContext
   ): void;
   [ActionTypes.MAKE_MOVE_ON_HISTORY](
@@ -127,6 +123,9 @@ export interface Actions {
 }
 
 export const actions: ActionTree<State, State> & Actions = {
+  [ActionTypes.SET_CURRENT_MOVE_NUMBER]({ commit }, payload: number) {
+    commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, payload);
+  },
   [ActionTypes.JUMP_TO_MOVE_NUMBER]({ commit }, payload: number) {
     commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, payload);
     commit(MutationTypes.SET_BOARD, state.moveStates[payload].boardState);
@@ -134,12 +133,6 @@ export const actions: ActionTree<State, State> & Actions = {
   [ActionTypes.RESET_MOVE_HISTORY]({ commit }) {
     commit(MutationTypes.EMPTY_MOVE_HISTORY);
     commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, -1);
-  },
-  [ActionTypes.INCREASE_MOVE_NUMBER]({ commit }) {
-    commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber + 1);
-  },
-  [ActionTypes.DECREASE_MOVE_NUMBER]({ commit }) {
-    commit(MutationTypes.SET_CURRENT_MOVE_NUMBER, state.currentMoveNumber - 1);
   },
   [ActionTypes.MAKE_MOVE_ON_HISTORY]({ commit }, payload: Move) {
     const amazon = state.board[payload.start.y][payload.start.x]
