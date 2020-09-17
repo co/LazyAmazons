@@ -1,6 +1,9 @@
 <template>
-  <canvas id="board" width="400" height="400"></canvas>
-  <div id="controlsColumn" style="text-align: center; background:">
+  <div style="display: inline-block; width: auto">
+    <canvas id="board" width="400" height="400" class="boardCanvas"></canvas>
+    <HistoryList />
+  </div>
+  <div id="controlsColumn">
     <button class="ghost-button" @click="stepToPreviousMove">prev</button>
     <button class="ghost-button" @click="loadGameFromClipboard">load</button>
     <button class="ghost-button" @click="stepToNextMove">next</button>
@@ -11,12 +14,12 @@
         <div class="territoryCounterRight blackOnWhite">{{whiteTerritoryNumber}}</div>
       </div>
       <div style="width=110px; display: table;">
-        <div class="territoryCounterLeft whiteOnGrey">Contested</div>
-        <div class="territoryCounterRight whiteOnGrey">{{contestedTerritoryNumber}}</div>
+        <div class="territoryCounterLeft contested">Contested</div>
+        <div class="territoryCounterRight contested">{{contestedTerritoryNumber}}</div>
       </div>
       <div style="width=110px; display: table;">
-        <div class="territoryCounterLeft whiteOnBlack">Black</div>
-        <div class="territoryCounterRight whiteOnBlack">{{blackTerritoryNumber}}</div>
+        <div class="territoryCounterLeft whiteOnGrey">Black</div>
+        <div class="territoryCounterRight whiteOnGrey">{{blackTerritoryNumber}}</div>
       </div>
     </div>
     <p />
@@ -49,6 +52,7 @@ import {
   Territories,
 } from "./AmazonsEngine";
 import { MutationTypes, useStore } from "@/store";
+import HistoryList from "./HistoryList.vue";
 
 enum TurnPhase {
   Start,
@@ -93,6 +97,9 @@ class TurnState {
 }
 
 const Amazons = defineComponent({
+  components: {
+    HistoryList,
+  },
   data() {
     return {
       store: useStore(),
@@ -228,7 +235,7 @@ const Amazons = defineComponent({
         );
       });
       ctx.globalAlpha = 1;
-      ctx.fillStyle = "#2e2f35";
+      ctx.fillStyle = "#263238";
       this.currentTerritory.dead.forEach((p) => {
         ctx.fillRect(
           p.x * this.squareSize,

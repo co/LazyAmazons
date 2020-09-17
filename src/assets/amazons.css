@@ -1,21 +1,26 @@
-#app {
-    font-family: Avenir, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-align: center;
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+:root {
+    --c-lighttext: #FFF8E1;
+    --c-dark: #263238;
+    --c-darkcard: #37474f;
+    --c-bluegrey: #455a64;
+    --c-whiteteam: #FFF8E1;
+    --c-blackteam: #455a64;
+    --c-selected: #558b2f;
+    --c-mouseover: #C5E1A5;
+    --c-contested: #92b0a4;
 }
 
-.button {
-    background-color: black;
-    color: white;
-    border: 2px solid white;
-    font-size: 20px;
+#app {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Roboto', Helvetica, Arial, sans-serif;
 }
 
 .ghost-button {
-    color: white;
-    background: #2e2f35;
-    border: 1px solid white;
+    color: var(--c-lighttext);
+    background: var(--c-blackteam);
+    border: 1px solid var(--c-lighttext);
     font-size: 17px;
     padding: 7px 12px;
     font-weight: normal;
@@ -23,29 +28,28 @@
     margin-right: 12px;
     display: inline-block;
     text-decoration: none;
-    font-family: 'Open Sans', sans-serif;
     min-width: 100px;
 }
 
 .ghost-button:hover,
 .ghost-button:active {
-    color: #fff;
-    background: #4b1622;
+    color: var(--c-lighttext);
+    background: var(--c-selected);
 }
 
 * {
-    background: #2e2f35;
-    color: white;
+    background: var(--c-dark);
+    color: var(--c-lighttext);
 }
 
 .toggleWithDescription {
     margin: 0 auto;
     width: 250px;
-    height: 30px;
+    height: 20px;
 }
 
 .toggleDescription {
-    color: white;
+    color: var(--c-lighttext);
     font-size: 20px;
     float: left;
     height: 30px;
@@ -54,10 +58,9 @@
     vertical-align: middle;
 }
 
-.canvas {
-    border: 1px solid black;
+.boardCanvas {
     image-rendering: crisp-edges;
-    float: left
+    float: left;
 }
 
 .territoryCounterLeft {
@@ -67,53 +70,95 @@
     text-align: right;
     vertical-align: middle;
     line-height: 50px;
-    color: black;
     float: left;
     font-size: 16px;
 }
 
 .territoryCounterRight {
-    background: white;
     padding-right: 10px;
     width: 20px;
     height: 50px;
     text-align: right;
     vertical-align: middle;
     line-height: 50px;
-    color: black;
     float: left;
     font-size: 16px;
     border: 0px;
 }
 
-.whiteOnBlack {
-    background-color: black;
-    color: white;
+.whiteOnGrey {
+    background-color: var(--c-blackteam);
+    color: var(--c-whiteteam);
+}
+
+.whiteOnDark {
+    background-color: var(--c-dark);
+    color: var(--c-whiteteam);
 }
 
 .blackOnWhite {
-    background-color: white;
-    color: black;
+    background-color: var(--c-whiteteam);
+    color: var(--c-blackteam);
 }
 
-.blackOnGreen {
-    background-color: #A2A754;
-    color: black;
+.selectedMove {
+    background-color: var(--c-selected);
+    color: var(--c-whiteteam);
 }
 
-.whiteOnGrey {
-    background-color: grey;
-    color: white;
+.mouseOverMove {
+    background-color: var(--c-darkcard);
+    color: var(--c-whiteteam);
+}
+
+.contested {
+    background-color: var(--c-contested);
+    color: var(--c-dark);
+}
+
+.moveList {
+    width: 250px;
+    height: auto;
+    margin-left: 40px;
+    overflow: hidden;
+}
+
+.moveListMoves {
+    width: 200px;
+    height: auto;
+    float: left;
+    background: var(--c-darkcard);
+    min-height: 300px;
+    overflow: hidden;
+}
+
+.moveListNumberColumn {
+    width: 50px;
+    height: auto;
+    float: left;
+    overflow: hidden;
+}
+
+.moveListNumber {
+    background: var(--c-bluegrey);
+    text-align: right;
+    padding-right: 15px;
+    width: 25px;
+    height: 26px;
+    line-height: 26px;
+    font-size: 13px;
+    background-color: var(--c-dark);
+    color: var(--c-whiteteam);
+    float: left;
 }
 
 .moveListItem {
-    display: block;
-    height: 40px;
-    line-height: 40px;
-    text-decoration: none;
-    width: 100px;
-    text-align: center;
-    font-size: 10px;
+    height: 26px;
+    line-height: 26px;
+    padding-left: 10px;
+    width: 90px;
+    text-align: left;
+    font-size: 13px;
     float: left;
 }
 
@@ -123,7 +168,7 @@
 .onoffswitch {
     float: right;
     position: relative;
-    width: 53px;
+    width: 43px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -139,37 +184,37 @@
     display: block;
     overflow: hidden;
     cursor: pointer;
-    height: 30px;
+    height: 20px;
     padding: 0;
-    line-height: 30px;
-    border: 2px solid #E3E3E3;
-    border-radius: 30px;
-    background-color: #808080;
+    line-height: 20px;
+    border: 2px solid var(--c-whiteteam);
+    border-radius: 20px;
+    background-color: var(--c-bluegrey);
     transition: background-color 0.1s ease-in;
 }
 
 .onoffswitch-label:before {
     content: "";
     display: block;
-    width: 30px;
+    width: 20px;
     margin: 0px;
-    background: #FFFFFF;
+    background: var(--c-whiteteam);
     position: absolute;
     top: 0;
     bottom: 0;
     right: 21px;
-    border: 2px solid #E3E3E3;
-    border-radius: 30px;
+    border: 2px solid var(--c-whiteteam);
+    border-radius: 20px;
     transition: all 0.1s ease-in 0s;
 }
 
 .onoffswitch-checkbox:checked+.onoffswitch-label {
-    background-color: #8EC28E;
+    background-color: var(--c-selected);
 }
 
 .onoffswitch-checkbox:checked+.onoffswitch-label,
 .onoffswitch-checkbox:checked+.onoffswitch-label:before {
-    border-color: #8EC28E;
+    border-color: var(--c-selected);
 }
 
 .onoffswitch-checkbox:checked+.onoffswitch-label:before {
