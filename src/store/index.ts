@@ -74,7 +74,7 @@ const mutations: MutationTree<State> & Mutations = {
     state.board[payload.point.y][payload.point.x] = payload.squareState;
   },
   [MutationTypes.SET_BOARD](state: State, payload: SquareState[][]) {
-    state.board = payload;
+    state.board = cloneBoard(payload);
   },
   [MutationTypes.SET_EMPTY_BOARD](state: State) {
     const board = [] as SquareState[][]
