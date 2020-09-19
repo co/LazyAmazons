@@ -3,9 +3,11 @@
     <canvas id="board" width="400" height="400" class="boardCanvas"></canvas>
     <HistoryList />
   </div>
-  <div id="controlPanel" :style="controlPanelStyle" >
+  <div id="controlPanel" :style="controlPanelStyle">
     <div class="territoryCounterContainer tooltip">
-    <span class="tooltiptext">Counts connected squares that are only reachable by black, white or both. Does not take defective territory into account.</span>
+      <span
+        class="tooltiptext"
+      >Counts connected squares that are only reachable by black, white or both. Does not take defective territory into account.</span>
       <div class="territoryCounterSubContainer">
         <div class="territoryCounterLeft blackOnWhite">White</div>
         <div class="territoryCounter territoryCounterRight blackOnWhite">{{whiteTerritoryNumber}}</div>
@@ -18,21 +20,21 @@
         <div class="territoryCounterLeft whiteOnGrey">Black</div>
         <div class="territoryCounter territoryCounterRight whiteOnGrey">{{blackTerritoryNumber}}</div>
       </div>
+    </div>
+    <div class="toggleWithDescription">
+      <div class="toggleDescription">Territory visualization</div>
+      <div class="onoffswitch">
+        <input
+          type="checkbox"
+          name="onoffswitch"
+          class="onoffswitch-checkbox"
+          id="myonoffswitch"
+          tabindex="0"
+          v-model="isTerritoryVisualizationEnabled"
+          @change="isTerritoryVisualizationEnabledChanged($event)"
+        />
+        <label class="onoffswitch-label" for="myonoffswitch"></label>
       </div>
-      <div class="toggleWithDescription">
-        <div class="toggleDescription">Territory visualization</div>
-        <div class="onoffswitch">
-          <input
-            type="checkbox"
-            name="onoffswitch"
-            class="onoffswitch-checkbox"
-            id="myonoffswitch"
-            tabindex="0"
-            v-model="isTerritoryVisualizationEnabled"
-            @change="isTerritoryVisualizationEnabledChanged($event)"
-          />
-          <label class="onoffswitch-label" for="myonoffswitch"></label>
-        </div>
     </div>
   </div>
 </template>
@@ -109,12 +111,14 @@ const Amazons = defineComponent({
       game: new AmazonsEngine(useStore()),
       currentTerritory: new Territories(),
       isTerritoryVisualizationEnabled: false,
+      placePieceAudio: new Audio(require('../assets/move.ogg'))
     };
   },
 
   mounted() {
     this.canvas = document.querySelector("canvas")!;
     this.updateBoardParameters();
+    this.placePieceAudio.volume = 0.7
 
     this.game.print();
     this.blackAmazonImage = new Image(700, 700);
@@ -582,6 +586,7 @@ const Amazons = defineComponent({
           this.turnState.positionToShootFrom!,
           arrowHitPosition
         );
+        this.placePieceAudio.play();
       }
       this.resetTurnState();
     },
@@ -589,6 +594,7 @@ const Amazons = defineComponent({
     tryMakeFirstPartOfMoveByMovingAmazon(newPosition: Point) {
       const oldPosition = this.turnState.previousPosition!;
       if (this.game.isPointQueenMoveAway(oldPosition, newPosition)) {
+        this.placePieceAudio.play();
         this.turnState.prepareToShoot(newPosition);
         this.legalPositions = this.game.getPossibleQueenMovesFromPointIgnoreObstacleAt(
           newPosition,
