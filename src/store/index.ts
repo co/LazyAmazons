@@ -4,11 +4,12 @@ import { Point } from '@/components/Point';
 import { SquareState } from '@/components/SquareState';
 import { Store as VuexStore, createStore, MutationTree, ActionContext, ActionTree, GetterTree, CommitOptions, DispatchOptions, createLogger } from 'vuex';
 
-export type State = { currentMoveNumber: number; moveStates: MoveState[]; board: SquareState[][] };
+export type State = { currentMoveNumber: number; moveStates: MoveState[]; board: SquareState[][]; boardLength: number };
 
 //set state
 const state: State = {
   currentMoveNumber: -1, //-1 => no moves
+  boardLength: 0,
   moveStates: [],
   board: []
 };
@@ -25,7 +26,8 @@ export enum MutationTypes {
   SET_SQUARE_STATE = "SET_SQUARE_STATE",
   SET_EMPTY_BOARD = "SET_EMPTY_BOARD",
   SET_CURRENT_MOVE = "SET_CURRENT_MOVE",
-  SET_BOARD = "SET_BOARD"
+  SET_BOARD = "SET_BOARD",
+  SET_BOARD_LENGTH = "SET_BOARD_LENGTH"
 }
 
 export enum ActionTypes {
@@ -47,6 +49,7 @@ export type Mutations<S = State> = {
   [MutationTypes.SET_SQUARE_STATE](state: S, payload: { point: Point; squareState: SquareState }): void;
   [MutationTypes.SET_EMPTY_BOARD](state: S): void;
   [MutationTypes.SET_BOARD](state: S, board: SquareState[][]): void;
+  [MutationTypes.SET_BOARD_LENGTH](state: S, board: number): void;
 };
 
 //define mutations
@@ -75,6 +78,9 @@ const mutations: MutationTree<State> & Mutations = {
   },
   [MutationTypes.SET_BOARD](state: State, payload: SquareState[][]) {
     state.board = cloneBoard(payload);
+  },
+  [MutationTypes.SET_BOARD_LENGTH](state: State, payload: number) {
+    state.boardLength = payload;
   },
   [MutationTypes.SET_EMPTY_BOARD](state: State) {
     const board = [] as SquareState[][]
@@ -157,10 +163,10 @@ export type Getters = {
   moves(state: State): Move[];
   squareStateByPoint(state: State): (p: Point) => SquareState;
   board(state: State): SquareState[][];
+  boardLength(state: State): number;
 };
 
 //getters
-
 export const getters: GetterTree<State, State> & Getters = {
   currentMoveNumber: state => {
     return state.currentMoveNumber;
@@ -172,10 +178,13 @@ export const getters: GetterTree<State, State> & Getters = {
     return state.moveStates.map(ms => ms.move);
   },
   squareStateByPoint: state => (p: Point) => {
-    return state.board[p.y][p.x]
+    return state.board[p.y][p.x];
   },
   board: state => {
-    return state.board
+    return state.board;
+  },
+  boardLength: state => {
+    return state.boardLength;
   }
 };
 

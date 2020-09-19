@@ -3,40 +3,36 @@
     <canvas id="board" width="400" height="400" class="boardCanvas"></canvas>
     <HistoryList />
   </div>
-  <div id="controlsColumn">
-    <button class="ghost-button" @click="stepToPreviousMove">prev</button>
-    <button class="ghost-button" @click="loadGameFromClipboard">load</button>
-    <button class="ghost-button" @click="stepToNextMove">next</button>
-    <p />
-    <div style="width=110px; display: inline-block;">
-      <div style=" width=110px">
+  <div id="controlPanel" :style="controlPanelStyle" >
+    <div class="territoryCounterContainer tooltip">
+    <span class="tooltiptext">Counts connected squares that are only reachable by black, white or both. Does not take defective territory into account.</span>
+      <div class="territoryCounterSubContainer">
         <div class="territoryCounterLeft blackOnWhite">White</div>
-        <div class="territoryCounterRight blackOnWhite">{{whiteTerritoryNumber}}</div>
+        <div class="territoryCounter territoryCounterRight blackOnWhite">{{whiteTerritoryNumber}}</div>
       </div>
-      <div style="width=110px; display: table;">
+      <div class="territoryCounterSubContainer">
         <div class="territoryCounterLeft contested">Contested</div>
-        <div class="territoryCounterRight contested">{{contestedTerritoryNumber}}</div>
+        <div class="territoryCounter territoryCounterRight contested">{{contestedTerritoryNumber}}</div>
       </div>
-      <div style="width=110px; display: table;">
+      <div class="territoryCounterSubContainer">
         <div class="territoryCounterLeft whiteOnGrey">Black</div>
-        <div class="territoryCounterRight whiteOnGrey">{{blackTerritoryNumber}}</div>
+        <div class="territoryCounter territoryCounterRight whiteOnGrey">{{blackTerritoryNumber}}</div>
       </div>
-    </div>
-    <p />
-    <div class="toggleWithDescription">
-      <div class="toggleDescription">Territory visualization</div>
-      <div class="onoffswitch">
-        <input
-          type="checkbox"
-          name="onoffswitch"
-          class="onoffswitch-checkbox"
-          id="myonoffswitch"
-          tabindex="0"
-          v-model="isTerritoryVisualizationEnabled"
-          @change="isTerritoryVisualizationEnabledChanged($event)"
-        />
-        <label class="onoffswitch-label" for="myonoffswitch"></label>
       </div>
+      <div class="toggleWithDescription">
+        <div class="toggleDescription">Territory visualization</div>
+        <div class="onoffswitch">
+          <input
+            type="checkbox"
+            name="onoffswitch"
+            class="onoffswitch-checkbox"
+            id="myonoffswitch"
+            tabindex="0"
+            v-model="isTerritoryVisualizationEnabled"
+            @change="isTerritoryVisualizationEnabledChanged($event)"
+          />
+          <label class="onoffswitch-label" for="myonoffswitch"></label>
+        </div>
     </div>
   </div>
 </template>
@@ -104,7 +100,6 @@ const Amazons = defineComponent({
     return {
       store: useStore(),
       boardSize: 10,
-      boardWidth: -1,
       squareSize: -1,
       canvas: (null as unknown) as HTMLCanvasElement,
       blackAmazonImage: (null as unknown) as HTMLImageElement,
@@ -170,17 +165,18 @@ const Amazons = defineComponent({
     },
     updateBoardParameters() {
       const shortestWindowSide = Math.min(
-        window.innerWidth,
-        window.innerHeight
+        window.innerWidth - 267,
+        window.innerHeight - 100
       );
       this.squareSize = Math.max(
         Math.floor((shortestWindowSide - 40) / this.boardSize),
         4
       );
-      this.boardWidth = this.squareSize * this.boardSize;
-      this.canvas.width = this.boardWidth;
-      this.canvas.height = this.boardWidth;
-      this.squareSize = Math.floor(this.boardWidth / this.boardSize);
+      const boardWidth = this.squareSize * this.boardSize;
+      this.canvas.width = boardWidth;
+      this.canvas.height = boardWidth;
+      this.store.commit(MutationTypes.SET_BOARD_LENGTH, boardWidth);
+      this.squareSize = Math.floor(boardWidth / this.boardSize);
     },
     resetTurnState() {
       this.legalPositions = [];
@@ -195,7 +191,6 @@ const Amazons = defineComponent({
     },
 
     loadGameFromClipboard() {
-      this.resetTurnState();
       navigator.clipboard.readText().then((text) => {
         this.game.playGameFromString(text);
       });
@@ -284,7 +279,6 @@ const Amazons = defineComponent({
       for (y = 0; y < this.boardSize; y++) {
         for (x = 0; x < this.boardSize; x++) {
           isWhite ? (ctx.fillStyle = "#F0D9B5") : (ctx.fillStyle = "#B58863");
-          //isWhite ? (ctx.fillStyle = "#EFEDD1") : (ctx.fillStyle = "#789656");
           ctx.fillRect(
             x * this.squareSize,
             y * this.squareSize,
@@ -638,6 +632,13 @@ const Amazons = defineComponent({
     },
     contestedTerritoryNumber(): number {
       return this.currentTerritory.contested.length;
+    },
+    controlPanelStyle(): object {
+      return {
+        "width": this.store.getters.boardLength + "px",
+        "display": "flex",
+        "justify-content": "space-between"
+      };
     },
   },
 });
