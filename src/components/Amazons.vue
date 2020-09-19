@@ -111,14 +111,14 @@ const Amazons = defineComponent({
       game: new AmazonsEngine(useStore()),
       currentTerritory: new Territories(),
       isTerritoryVisualizationEnabled: false,
-      placePieceAudio: new Audio(require('../assets/move.ogg'))
+      placePieceAudio: new Audio(require("../assets/move.ogg")),
     };
   },
 
   mounted() {
     this.canvas = document.querySelector("canvas")!;
     this.updateBoardParameters();
-    this.placePieceAudio.volume = 0.7
+    this.placePieceAudio.volume = 0.7;
 
     this.game.print();
     this.blackAmazonImage = new Image(700, 700);
@@ -203,6 +203,7 @@ const Amazons = defineComponent({
       const ctx = this.canvas.getContext("2d")!;
 
       this.drawEmptyBoard(ctx);
+      this.drawFileRankSymbols(ctx);
       this.drawPreviousMoveHighlight(ctx);
       if (this.isTerritoryVisualizationEnabled) {
         this.drawTerritory(ctx);
@@ -275,6 +276,32 @@ const Amazons = defineComponent({
           movingAmazon
         );
       }
+    },
+    drawFileRankSymbols(ctx: CanvasRenderingContext2D) {
+      const fontSize = this.squareSize * 0.15;
+      if(fontSize < 7.5){
+        return;
+      }
+
+      ctx.font = "bold " + fontSize + "px arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const files = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+      files.forEach((file, index) => {
+        index % 2 == 0
+          ? (ctx.fillStyle = "#F0D9B5")
+          : (ctx.fillStyle = "#B58863");
+        ctx.fillText(
+          (index + 1).toString(),
+          9.87 * this.squareSize,
+          (index + 0.13) * this.squareSize
+        );
+        ctx.fillText(
+          file,
+          (index + 0.13) * this.squareSize,
+          9.87 * this.squareSize
+        );
+      });
     },
     drawEmptyBoard(ctx: CanvasRenderingContext2D) {
       let x: number;
@@ -641,9 +668,9 @@ const Amazons = defineComponent({
     },
     controlPanelStyle(): object {
       return {
-        "width": this.store.getters.boardLength + "px",
-        "display": "flex",
-        "justify-content": "space-between"
+        width: this.store.getters.boardLength + "px",
+        display: "flex",
+        "justify-content": "space-between",
       };
     },
   },
