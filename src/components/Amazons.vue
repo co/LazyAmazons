@@ -165,7 +165,7 @@ const Amazons = defineComponent({
     },
     updateBoardParameters() {
       const shortestWindowSide = Math.min(
-        window.innerWidth - 267,
+        window.innerWidth - 267, //make room for history list and territory counter.
         window.innerHeight - 100
       );
       this.squareSize = Math.max(
@@ -468,14 +468,14 @@ const Amazons = defineComponent({
         case TurnPhase.AmazonMoving: {
           e.preventDefault();
           e.stopPropagation();
-          const tp = this.getTouchedPoint(e.touches);
+          const tp = this.getTouchPosition(e.touches);
           this.drawFloatingAmazon(tp.x, tp.y, this.squareSize * 1.7, true);
           break;
         }
       }
     },
 
-    getTouchedPoint(tl: TouchList) {
+    getTouchedSquare(tl: TouchList) {
       const tp = this.getTouchPosition(tl);
       return this.coordinateToSquare(tp.x, tp.y);
     },
@@ -491,7 +491,7 @@ const Amazons = defineComponent({
           e.preventDefault();
           e.stopPropagation();
 
-          this.tryStartMoveAmazon(this.getTouchedPoint(e.touches));
+          this.tryStartMoveAmazon(this.getTouchedSquare(e.touches));
 
           this.draw();
         }
@@ -549,7 +549,7 @@ const Amazons = defineComponent({
           e.stopPropagation();
 
           this.tryMakeFirstPartOfMoveByMovingAmazon(
-            this.getTouchedPoint(e.changedTouches)
+            this.getTouchedSquare(e.changedTouches)
           );
           this.draw();
           break;
@@ -560,7 +560,7 @@ const Amazons = defineComponent({
           e.stopPropagation();
 
           this.tryFinishMoveShootingAtPosition(
-            this.getTouchedPoint(e.changedTouches)
+            this.getTouchedSquare(e.changedTouches)
           );
           this.draw();
           break;
