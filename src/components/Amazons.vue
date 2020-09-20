@@ -203,7 +203,7 @@ const Amazons = defineComponent({
       const ctx = this.canvas.getContext("2d")!;
 
       this.drawEmptyBoard(ctx);
-      this.drawFileRankSymbols(ctx);
+      this.drawFileRankLabels(ctx);
       this.drawPreviousMoveHighlight(ctx);
       if (this.isTerritoryVisualizationEnabled) {
         this.drawTerritory(ctx);
@@ -277,7 +277,7 @@ const Amazons = defineComponent({
         );
       }
     },
-    drawFileRankSymbols(ctx: CanvasRenderingContext2D) {
+    drawFileRankLabels(ctx: CanvasRenderingContext2D) {
       const fontSize = this.squareSize * 0.15;
       if(fontSize < 7.5){
         return;
@@ -292,7 +292,7 @@ const Amazons = defineComponent({
           ? (ctx.fillStyle = "#F0D9B5")
           : (ctx.fillStyle = "#B58863");
         ctx.fillText(
-          (index + 1).toString(),
+          (10 - index).toString(),
           9.87 * this.squareSize,
           (index + 0.13) * this.squareSize
         );
@@ -331,8 +331,8 @@ const Amazons = defineComponent({
         return;
       }
 
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = "#77ee33";
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = "#55ab2f";
       const highlights = [lastMove.start, lastMove.end, lastMove.arrow];
 
       highlights.forEach((hl) => {
